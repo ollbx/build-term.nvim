@@ -5,18 +5,20 @@ M.namespace = vim.api.nvim_create_namespace("collect.nvim")
 
 ---@class Collect.Item
 ---@field key       string       The unique key that identifies the item.
----@field src_bufnr integer      The (terminal) buffer that contains the message.
----@field src_lnum  integer      The line number of the message.
+---@field msg_bufnr integer      The (terminal) buffer that contains the message.
+---@field msg_lnum  integer      The line number of the message.
 ---@field regex     string[]     The regex (one per line) that were matched.
 ---@field message   string|nil   The message associated with the item.
 ---@field path      string|nil   The path associated with the item.
 ---@field lnum      integer|nil  The line number associated with the item.
+---@field sign      string|nil   The sign text.
 ---@field show_message function
 ---@field show_source function
 
 ---@class Collect.MatchConfig
 ---@field regex string[][] Contains a regex for each matched line, followed by
 ---                        names for the matched groups.
+---@field type string The type of the match.
 
 ---Matches items in the given buffer.
 ---@param bufnr   integer  The (terminal) buffer to scan.
@@ -57,6 +59,7 @@ function M.match(bufnr, first, last, matches)
 					msg_bufnr = bufnr,
 					msg_lnum  = lnum,
 					regex     = match.regex,
+					type      = match.type or "hint",
 					message   = nil,
 					path      = nil,
 					lnum      = nil,
@@ -119,6 +122,16 @@ end
 function Item:show_message()
 	vim.api.nvim_set_current_buf(self.msg_bufnr)
 	vim.api.nvim_win_set_cursor(0, { self.msg_lnum, 0 })
+
+	vim.api.nvim_buf_clear_namespace(self.msg_bufnr, M.namespace, 0, -1)
+
+	vim.api.nvim_buf_set_extmark(
+		self.msg_bufnr,
+		M.namespace,
+		self.msg_lnum - 1,
+		0,
+		{ end_row = self.msg_lnum + #self.regex - 1, hl_eol = true, hl_group = "Visual" }
+	)
 
 	--vim.api.nvim_buf_set_extmark()
 	--local nid = vim.api.nvim_create_namespace("collect")
