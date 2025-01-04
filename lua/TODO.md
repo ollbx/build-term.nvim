@@ -14,3 +14,4 @@
 - Multiple matchers
   - Change matcher
   - Build with matcher
+- Go to entry from cursor line
