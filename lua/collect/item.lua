@@ -11,6 +11,7 @@ M.namespace = vim.api.nvim_create_namespace("collect.nvim")
 ---@field message   string|nil   The message associated with the item.
 ---@field path      string|nil   The path associated with the item.
 ---@field lnum      integer|nil  The line number associated with the item.
+---@field col       integer|nil
 ---@field sign      string|nil   The sign text.
 ---@field show_message function
 ---@field show_source function
@@ -63,6 +64,7 @@ function M.match(bufnr, first, last, matches)
 					message   = nil,
 					path      = nil,
 					lnum      = nil,
+					col       = nil,
 				}
 
 				setmetatable(item, { __index = Item })
