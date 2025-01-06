@@ -22,74 +22,20 @@ local Item = require("collect.item")
 ---@class Collect.Options
 ---@field match Collect.MatchConfig[]
 
----@class Collect.Module
----@field _namespace integer The extmark namespace.
----@field _opts Collect.Options The options used.
----@field _matches Collect.Item[]
----@field _known { string: boolean }
----
----@field _buffer integer The ID of the terminal buffer. -1 when not initialized.
----@field _window integer The ID of the toggle window. -1 when closed.
----@field _mark   integer The ID of the current item mark. -1 when not set.
----@field _index  integer The index of the currently selected item. 0 when not selected.
----@field _view   integer The ID of the window used for viewing files. -1 when not set.
----
----@field cur_mark integer?
----@field setup function
----@field clear function
----@field next function
----@field prev function
----@field clear_mark function
----@field mark function
----@field goto function
----@field goto_source function
----@field mark_source function
----@field goto_target function
----@field toggle function
----@field show function
----@field hide function
----@field send function
----@field build function
-
----@type Collect.Module
----@diagnostic disable-next-line: missing-fields
 local M = {
-	_matches = {},
-	_known = {},
-	_namespace = vim.api.nvim_create_namespace("collect.nvim"),
-	_buffer = -1,
-	_window = -1,
-	_mark = -1,
-	_view = -1,
-	_index = 0,
+	namespace = vim.api.nvim_create_namespace("collect.nvim"),
+	matches = {},
+	known = {},
+	buffer = -1,
+	window = -1,
+	view = -1,
+	cur_mark = -1,
+	cur_index = 0,
 }
 
----Sets up the plugin.
----@param opts Collect.Options|nil The configuration options.
-function M.setup(opts)
-	local def_opts = {
-		match = {}
-	}
-
-	M._opts = vim.tbl_deep_extend("force", def_opts, opts or {})
-end
-
----Clears the list of captured items.
-function M.clear()
-	M._index = 0
-	M._mark = -1
-	M._matches = {}
-	M._known = {}
-	vim.api.nvim_buf_clear_namespace(M._buffer, M._namespace, 0, -1)
-end
-
----Clears the extmark for the current item.
-function M.clear_mark()
-	if M._mark then
-		vim.api.nvim_buf_del_extmark(M._buffer, M._namespace, M._mark)
-		M._mark = nil
-	end
-end
+-------------------------------------------------------------------------------
+-- Private functions
+-------------------------------------------------------------------------------
 
 ---Scans through items in the given direction, until `filter` returns a truthy value.
 ---Then sets `M._index` accordingly.
@@ -111,24 +57,26 @@ local function scan(opts, dir)
 	opts = vim.tbl_extend("force", def_opts, opts or {})
 
 	M.clear_mark()
-	local index = M._index
+	local index = M.cur_index
 
 	while true do
 		index = index + dir
 
-		if index <= 0 or index > #M._matches then
+		if index <= 0 or index > #M.matches then
 			opts.notify()
 			return false
 		end
 
-		if opts.filter(M._matches[index]) then
-			M._index = index
-			opts.notify(M._index, #M._matches, M._matches[M._index])
+		if opts.filter(M.matches[index]) then
+			M.cur_index = index
+			opts.notify(M.cur_index, #M.matches, M.matches[M.cur_index])
 			return true
 		end
 	end
 end
 
+---Runs the given function in the context of the terminal window.
+---Then restores the previous window.
 local function with_window(fun)
 	local win = vim.api.nvim_get_current_win()
 	M.show(true)
@@ -136,27 +84,132 @@ local function with_window(fun)
 	vim.api.nvim_set_current_win(win)
 end
 
+---Creates a matcher function from a matcher configuration.
+local function new_matcher(config)
+	if type(config) == "table" then
+		return function(line)
+			local groups = vim.fn.matchlist(line, config[1])
+			local result = {}
+
+			if groups[1] then
+				for i = 2, #groups do
+					result[groups[i]] = groups[i]
+				end
+
+				return result
+			else
+				return nil
+			end
+		end
+	elseif type(config) == "function" then
+		return config
+	else
+		vim.notify("Invalid matcher.", vim.log.levels.ERROR)
+		return nil
+	end
+end
+
+-------------------------------------------------------------------------------
+-- Public API
+-------------------------------------------------------------------------------
+
+---Sets up the plugin.
+---@param opts Collect.Options|nil The configuration options.
+function M.setup(opts)
+	local def_opts = { match = {} }
+	M.opts = vim.tbl_deep_extend("force", def_opts, opts or {})
+end
+
+---Clears the list of matched items.
+function M.clear()
+	M.cur_index = 0
+	M.cur_mark = -1
+	M.matches = {}
+	M.known = {}
+	vim.api.nvim_buf_clear_namespace(M.buffer, M.namespace, 0, -1)
+end
+
+---Clears the current item mark.
+function M.clear_mark()
+	if M.cur_mark then
+		vim.api.nvim_buf_del_extmark(M.buffer, M.namespace, M.cur_mark)
+		M.cur_mark = nil
+	end
+end
+
+---Clears / resets the terminal.
+function M.reset()
+	local show = vim.api.nvim_win_is_valid(M.window)
+	local active = vim.api.nvim_get_current_win() == M.window
+
+	M.hide()
+	M.clear()
+
+	if vim.api.nvim_buf_is_valid(M.buffer) then
+		vim.api.nvim_buf_delete(M.buffer, { force = true })
+		M.buffer = -1
+	end
+
+	if show then
+		M.show(active)
+	end
+end
+
 ---Navigates to the next item.
-function M.next(opts)
+---See `goto_current` for available options.
+function M.goto_next(opts)
 	if scan(opts, 1) then
-		M.goto()
+		M.goto_current(opts)
 	end
 end
 
 ---Navigates to the previous item.
-function M.prev(opts)
+---See `goto_current` for available options.
+function M.goto_prev(opts)
 	if scan(opts, -1) then
-		M.goto()
+		M.goto_current(opts)
+	end
+end
+
+---Navigates to the current item.
+---
+---# Options
+---* mark_source: `true` to mark the source location in the terminal buffer.
+---* goto_source: `true` to navigate to the source location in the terminal window.
+---* goto_target: `true` to navigate to the target location in the view window.
+function M.goto_current(opts)
+	local item = M.matches[M.cur_index]
+
+	if item then
+		local def_opts = {
+			mark_source = true,
+			goto_source = true,
+			goto_target = true,
+		}
+
+		opts = vim.tbl_extend("force", def_opts, opts or {})
+
+		if opts.mark_source then
+			M.mark_source()
+		end
+
+		if opts.goto_source then
+			M.goto_source()
+		end
+
+		if opts.goto_target then
+			M.goto_target()
+		end
 	end
 end
 
 ---Sets the cursor in the terminal buffer to the source of the current item.
 function M.goto_source()
-	local item = M._matches[M._index]
+	local item = M.matches[M.cur_index]
 
 	if item then
 		with_window(function()
-			vim.api.nvim_set_current_win(M._window)
+			vim.api.nvim_set_current_win(M.window)
 			vim.api.nvim_win_set_cursor(0, { item.msg_lnum, 0 })
 		end)
 	end
@@ -164,7 +217,7 @@ end
 
 ---Marks the currently selected item in the terminal buffer.
 function M.mark_source()
-	local item = M._matches[M._index]
+	local item = M.matches[M.cur_index]
 	M.clear_mark()
 
 	if item then
@@ -177,7 +230,7 @@ function M.mark_source()
 
 		M.cur_mark = vim.api.nvim_buf_set_extmark(
 			item.msg_bufnr,
-			M._namespace,
+			M.namespace,
 			item.msg_lnum - 1,
 			0,
 			opts)
@@ -186,15 +239,15 @@ end
 
 ---Opens the path for the current match in the view window and sets the cursor position.
 function M.goto_target()
-	local item = M._matches[M._index]
+	local item = M.matches[M.cur_index]
 
 	if item then
 		local view = vim.api.nvim_get_current_win()
 
-		if view ~= M._window then
-			M._view = view
+		if view ~= M.window then
+			M.view = view
 		else
-			view = M._view
+			view = M.view
 		end
 
 		if not vim.api.nvim_win_is_valid(view) then
@@ -222,34 +275,38 @@ function M.goto_target()
 	end
 end
 
-function M.goto()
-	local item = M._matches[M._index]
-
-	if item then
-		M.mark_source()
-		M.goto_source()
-		M.goto_target()
-	end
-end
-
-function M.toggle(focus)
-	if not vim.api.nvim_win_is_valid(M._window) then
-		M.show(focus)
+---Toggles the visibility of the terminal window.
+---See `show` for available options.
+function M.toggle(opts)
+	if not vim.api.nvim_win_is_valid(M.window) then
+		M.show(opts)
 	else
 		M.hide()
 	end
 end
 
-function M.show(focus)
-	if not vim.api.nvim_buf_is_valid(M._buffer) then
-		M._buffer = vim.api.nvim_create_buf(false, true)
+---Shows the terminal window.
+---
+---# Options
+---* focus:  `true` to move the cursor into the terminal buffer.
+---* insert: `true` to enter insert mode after focusing the terminal buffer.
+function M.show(opts)
+	local def_opts = {
+		focus  = false,
+		insert = true,
+	}
+
+	opts = vim.tbl_extend("force", def_opts, opts)
+
+	if not vim.api.nvim_buf_is_valid(M.buffer) then
+		M.buffer = vim.api.nvim_create_buf(false, true)
 	end
 
-	if not vim.api.nvim_win_is_valid(M._window) then
+	if not vim.api.nvim_win_is_valid(M.window) then
 		local height = math.floor(vim.o.lines / 4)
 		local win = vim.api.nvim_get_current_win()
 
-		M._window = vim.api.nvim_open_win(M._buffer, true, {
+		M.window = vim.api.nvim_open_win(M.buffer, true, {
 			split  = "below",
 			win    = -1,
 			height = height,
@@ -258,17 +315,17 @@ function M.show(focus)
 		vim.opt_local.nu = false
 		vim.opt_local.relativenumber = false
 
-		if vim.bo[M._buffer].buftype ~= "terminal" then
+		if vim.bo[M.buffer].buftype ~= "terminal" then
 			vim.cmd.terminal("nu")
 
-			vim.api.nvim_buf_attach(M._buffer, false, {
+			vim.api.nvim_buf_attach(M.buffer, false, {
 				on_lines = function(_, _, _, first, last)
-					local items = Item.match(M._buffer, first, last, M._opts.match)
+					local items = Item.match(M.buffer, first, last, M.opts.match)
 
 					for _, item in ipairs(items) do
-						if not M._known[item.key] then
-							table.insert(M._matches, item)
-							M._known[item.key] = true
+						if not M.known[item.key] then
+							table.insert(M.matches, item)
+							M.known[item.key] = true
 
 							local opts = {
 								end_row = item.msg_lnum + #item.regex - 2,
@@ -295,7 +352,7 @@ function M.show(focus)
 
 							vim.api.nvim_buf_set_extmark(
 								item.msg_bufnr,
-								M._namespace,
+								M.namespace,
 								item.msg_lnum - 1,
 								0,
 								opts)
@@ -305,30 +362,34 @@ function M.show(focus)
 			})
 		end
 
-		if focus then
-			vim.cmd.startinsert()
+		if opts.focus then
+			if opts.insert then
+				vim.cmd.startinsert()
+			end
 		else
 			vim.api.nvim_set_current_win(win)
 		end
-	elseif focus then
-		vim.api.nvim_set_current_win(M._window)
+	elseif opts.focus then
+		vim.api.nvim_set_current_win(M.window)
 	end
 end
 
+---Hides the terminal window.
 function M.hide()
-	if vim.api.nvim_win_is_valid(M._window) then
-		vim.api.nvim_win_hide(M._window)
-		M._window = -1
+	if vim.api.nvim_win_is_valid(M.window) then
+		vim.api.nvim_win_hide(M.window)
+		M.window = -1
 	end
 end
 
+---Sends a command to the terminal.
+---@param cmd string The command to run.
 function M.send(cmd)
-	if M._buffer >= 0 then
-		vim.fn.chansend(vim.bo[M._buffer].channel, cmd .. "\r\n")
+	if M.buffer >= 0 then
+		vim.fn.chansend(vim.bo[M.buffer].channel, cmd .. "\r\n")
 
-		with_window(function()
-			vim.cmd("norm G")
-		end)
+		-- Move to the end of the buffer (so that it auto-scrolls).
+		with_window(function() vim.cmd("norm G") end)
 	end
 end
 
