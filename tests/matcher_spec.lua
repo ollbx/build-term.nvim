@@ -1,7 +1,7 @@
 ---@diagnostic disable: need-check-nil
-local Matcher = require("build-term.matcher")
-
 describe("build-term.matcher", function()
+	local Matcher = require("build-term.matcher")
+
 	local lines = {
 		"woo",
 		"foo",
