@@ -33,6 +33,7 @@
 ---@field offset integer? The match offset.
 ---@field length integer The length of the match.
 ---@field mark integer? The extmark ID in the terminal buffer.
+---@field type string The type of the match.
 ---@field data { string: string } The match data.
 
 local M = {}
@@ -95,7 +96,7 @@ function M.setup(config)
 		end
 
 		return function(item)
-			return types[item.matcher.type] ~= nil
+			return types[item.type] ~= nil
 		end
 	end
 

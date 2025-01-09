@@ -66,7 +66,7 @@ end
 local M = {}
 
 ---@class BuildTerm.Matcher
----@field type string The type of the match.
+---@field type? string The type of the match.
 ---@field group string The group that the matcher belongs to.
 ---@field priority integer The priority for the matcher.
 ---@field mark_config vim.api.keyset.set_extmark? Extmark config override.
@@ -108,7 +108,7 @@ function M.new(config)
 		group = config.group or "default",
 		priority = config.priority or 0,
 		mark_config = config.mark_config,
-		type = config.type or "hint",
+		type = config.type,
 	}
 
 	setmetatable(matcher, Matcher)
@@ -125,7 +125,7 @@ end
 ---@param offset integer The offset to match at.
 ---@return BuildTerm.Match? The matched data or `nil`.
 function Matcher:match(lines, offset)
-	local result = {}
+	local data = {}
 
 	for i, matcher in ipairs(self.matchers) do
 		local line = lines[offset + i - 1]
@@ -138,16 +138,27 @@ function Matcher:match(lines, offset)
 
 		if line_result then
 			if type(line_result) == "table" then
-				result = vim.tbl_extend("force", result, line_result)
+				data = vim.tbl_extend("force", data, line_result)
 			end
 		else
 			return nil
 		end
 	end
 
+	local type = self.type
+
+	if not type then
+		if data.type then
+			type = data.type
+		else
+			type = "hint"
+		end
+	end
+
 	return {
 		length = #self.matchers,
-		data = result,
+		data = data,
+		type = type,
 	}
 end
 

@@ -35,9 +35,9 @@ describe("collect.match", function()
 
 		assert.are.same(
 			{
-				{ data = { a = "f", b = "oo" }, offset = 2, length = 1 },
-				{ data = { a = "f", b = "oo" }, offset = 3, length = 1 },
-				{ data = { a = "f", b = "ou" }, offset = 6, length = 1 },
+				{ data = { a = "f", b = "oo" }, offset = 2, length = 1, type = "hint" },
+				{ data = { a = "f", b = "oo" }, offset = 3, length = 1, type = "hint" },
+				{ data = { a = "f", b = "ou" }, offset = 6, length = 1, type = "hint" },
 			},
 			result
 		)
@@ -55,9 +55,9 @@ describe("collect.match", function()
 
 		assert.are.same(
 			{
-				{ data = { a = "f", b = "oo", c = "bar" }, offset = 3, length = 1 },
-				{ data = {}, offset = 4, length = 1 },
-				{ data = {}, offset = 5, length = 2 },
+				{ data = { a = "f", b = "oo", c = "bar" }, offset = 3, length = 1, type = "hint" },
+				{ data = {}, offset = 4, length = 1, type = "hint" },
+				{ data = {}, offset = 5, length = 2, type = "hint" },
 			},
 			result
 		)
@@ -75,12 +75,12 @@ describe("collect.match", function()
 
 		assert.are.same(
 			{
-				{ data = { a = "f", b = "oo" }, offset = 2, length = 1 },
+				{ data = { a = "f", b = "oo" }, offset = 2, length = 1, type = "hint" },
 				-- Note: priority 2 wins here.
-				{ data = { a = "f", b = "oo", c = "bar" }, offset = 3, length = 1 },
-				{ data = {}, offset = 4, length = 1 },
-				{ data = {}, offset = 5, length = 2 },
-				{ data = { a = "f", b = "ou" }, offset = 6, length = 1 },
+				{ data = { a = "f", b = "oo", c = "bar" }, offset = 3, length = 1, type = "hint" },
+				{ data = {}, offset = 4, length = 1, type = "hint" },
+				{ data = {}, offset = 5, length = 2, type = "hint" },
+				{ data = { a = "f", b = "ou" }, offset = 6, length = 1, type = "hint" },
 			},
 			result
 		)
