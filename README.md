@@ -51,6 +51,8 @@ return {
     keys = {
         { "[m",         "<cmd>BuildTerm prev<cr>", desc = "Previous build match" },
         { "]m",         "<cmd>BuildTerm next<cr>", desc = "Next build match" },
+        { "[w",         "<cmd>BuildTerm prev warning,warn<cr>", desc = "Previous build warning" },
+        { "]w",         "<cmd>BuildTerm next warning,warn<cr>", desc = "Next build warning" },
         { "[e",         "<cmd>BuildTerm prev error,fatal<cr>", desc = "Previous build error" },
         { "]e",         "<cmd>BuildTerm next error,fatal<cr>", desc = "Next build error" },
         { "<leader>bt", "<cmd>BuildTerm toggle<cr>", desc = "Toggle" },
