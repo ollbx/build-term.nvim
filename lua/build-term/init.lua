@@ -72,7 +72,7 @@ function M.setup(config)
 		return {
 			"toggle",
 			"open",
-			"open-focus",
+			"focus",
 			"close",
 			"reset",
 			"send",
@@ -83,6 +83,22 @@ function M.setup(config)
 		}
 	end
 
+	local function make_filter(arg)
+		local types = {}
+
+		if arg == nil then
+			return function() return true end
+		end
+
+		for type in string.gmatch(arg, "([^,]+)") do
+			types[type] = true
+		end
+
+		return function(item)
+			return types[item.matcher.type] ~= nil
+		end
+	end
+
 	local command = function(args)
 		local cmd = args.fargs[1]
 
@@ -90,7 +106,7 @@ function M.setup(config)
 			M.toggle()
 		elseif cmd == "open" then
 			M.open()
-		elseif cmd == "open-focus" then
+		elseif cmd == "focus" then
 			M.open({ focus = true })
 		elseif cmd == "close" then
 			M.close()
@@ -99,9 +115,9 @@ function M.setup(config)
 		elseif cmd == "send" then
 			M.send(string.sub(args.args, 5))
 		elseif cmd == "next" then
-			M.goto_next()
+			M.goto_next({ filter = make_filter(args.fargs[2]) })
 		elseif cmd == "prev" then
-			M.goto_prev()
+			M.goto_prev({ filter = make_filter(args.fargs[2]) })
 		elseif cmd == "select" then
 			table.remove(args.fargs, 1)
 			M.select(unpack(args.fargs))

@@ -32,10 +32,10 @@ function M.new(config)
 		end,
 		goto = function(match)
 			local lnum = tonumber(match.data.lnum)
-			local col = tonumber(match.data.col) or 0
+			local col = tonumber(match.data.col) or 1
 
 			if lnum then
-				vim.api.nvim_win_set_cursor(0, { lnum, col })
+				vim.api.nvim_win_set_cursor(0, { lnum, col - 1 })
 			end
 		end,
 		find_view = function()
