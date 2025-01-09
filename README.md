@@ -67,6 +67,20 @@ return {
 
 ## Match groups
 
+```lua
+match = {
+    rust = {
+        {
+            lines = {
+                { [[\(error\|warning\).*:\s*\(.*\)]], "type", "message" },
+                { [[-->\s*\(.*\):\(\d\+\):\(\d\+\)]], "filename", "lnum", "col" }
+            },
+        }
+    },
+    -- ...
+}
+```
+
 `opts.match` is a table of match groups. The special group `default` is selected by
 default. Any other group can be selected by:
 
@@ -160,6 +174,18 @@ matches with `get_matches()` and then calling `goto_match(match, config)` to nav
 to a specific match.
 
 ## Builders
+
+```lua
+build = {
+    {
+        select = "rust",
+        trigger = "Cargo.toml",
+        command = function(arg) return "cargo " .. (arg or "build") end,
+        priority = 2,
+    },
+    -- ...
+}
+```
 
 You can configure several builders through `opts.build`. When a build is issued using the
 `:BuildTerm build` command, the list of builders is iterated (ordered by descending priority).
