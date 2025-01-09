@@ -49,13 +49,15 @@ return {
 		}
 	},
 	keys = {
-		{ "<leader>bp", "<cmd>BuildTerm prev<cr>", desc = "Go to previous" },
-		{ "<leader>bn", "<cmd>BuildTerm next<cr>", desc = "Go to next" },
+		{ "[m",         "<cmd>BuildTerm prev<cr>", desc = "Previous build match" },
+		{ "]m",         "<cmd>BuildTerm next<cr>", desc = "Next build match" },
+		{ "[e",         "<cmd>BuildTerm prev error,fatal<cr>", desc = "Previous build error" },
+		{ "]e",         "<cmd>BuildTerm next error,fatal<cr>", desc = "Next build error" },
 		{ "<leader>bt", "<cmd>BuildTerm toggle<cr>", desc = "Toggle" },
-		{ "<leader>bo", "<cmd>BuildTerm open-focus<cr>", desc = "Open" },
+		{ "<leader>bo", "<cmd>BuildTerm focus<cr>", desc = "Open" },
 		{ "<leader>bb", "<cmd>BuildTerm build<cr>", desc = "Build" },
 		{ "<leader>bc", "<cmd>BuildTerm build clean<cr>", desc = "Clean" },
-		{ "<leader>bd", "<cmd>BuildTerm build doc<cr>", desc = "Doc" },
+		{ "<leader>bd", "<cmd>BuildTerm build doc<cr>", desc = "Build Docs" },
 	}
 }
 ```
