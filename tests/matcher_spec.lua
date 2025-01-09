@@ -16,18 +16,10 @@ describe("collect.matcher", function()
 
 		assert.is_truthy(matcher)
 		assert.are.same(1, matcher:get_context())
-		assert.are.same({ data = {}, offset = 1, length = 1 }, matcher:match(lines, 1))
-		assert.are.same({ data = {}, offset = 2, length = 1 }, matcher:match(lines, 2))
+		assert.are.same({ data = {}, length = 1 }, matcher:match(lines, 1))
+		assert.are.same({ data = {}, length = 1 }, matcher:match(lines, 2))
 		assert.are.same(nil, matcher:match(lines, 3))
-
-		assert.are.same(
-			{
-				{ data = {}, offset = 1, length = 1 },
-				{ data = {}, offset = 2, length = 1 },
-				{ data = {}, offset = 5, length = 1 },
-			},
-			matcher:scan(lines)
-		)
+		assert.are.same({ data = {}, length = 1 }, matcher:match(lines, 5))
 	end)
 
 	it("should match a regex with an unnamed group", function()
@@ -35,18 +27,10 @@ describe("collect.matcher", function()
 
 		assert.is_truthy(matcher)
 		assert.are.same(1, matcher:get_context())
-		assert.are.same({ data = { message = "w" }, offset = 1, length = 1 }, matcher:match(lines, 1))
-		assert.are.same({ data = { message = "f" }, offset = 2, length = 1 }, matcher:match(lines, 2))
+		assert.are.same({ data = { message = "w" }, length = 1 }, matcher:match(lines, 1))
+		assert.are.same({ data = { message = "f" }, length = 1 }, matcher:match(lines, 2))
 		assert.are.same(nil, matcher:match(lines, 3))
-
-		assert.are.same(
-			{
-				{ data = { message = "w" }, offset = 1, length = 1 },
-				{ data = { message = "f" }, offset = 2, length = 1 },
-				{ data = { message = "f" }, offset = 5, length = 1 },
-			},
-			matcher:scan(lines)
-		)
+		assert.are.same({ data = { message = "f" }, length = 1 }, matcher:match(lines, 5))
 	end)
 
 	it("should match a regex with named groups", function()
@@ -56,18 +40,10 @@ describe("collect.matcher", function()
 
 		assert.is_truthy(matcher)
 		assert.are.same(1, matcher:get_context())
-		assert.are.same({ data = { head = "w", tail = "oo" }, offset = 1, length = 1 }, matcher:match(lines, 1))
-		assert.are.same({ data = { head = "f", tail = "oo" }, offset = 2, length = 1 }, matcher:match(lines, 2))
+		assert.are.same({ data = { head = "w", tail = "oo" }, length = 1 }, matcher:match(lines, 1))
+		assert.are.same({ data = { head = "f", tail = "oo" }, length = 1 }, matcher:match(lines, 2))
 		assert.are.same(nil, matcher:match(lines, 3))
-
-		assert.are.same(
-			{
-				{ data = { head = "w", tail = "oo" }, offset = 1, length = 1 },
-				{ data = { head = "f", tail = "oo" }, offset = 2, length = 1 },
-				{ data = { head = "f", tail = "ou" }, offset = 5, length = 1 },
-			},
-			matcher:scan(lines)
-		)
+		assert.are.same({ data = { head = "f", tail = "ou" }, length = 1 }, matcher:match(lines, 5))
 	end)
 
 	it("should match a function returning a bool", function()
@@ -80,16 +56,9 @@ describe("collect.matcher", function()
 		assert.is_truthy(matcher)
 		assert.are.same(1, matcher:get_context())
 		assert.are.same(nil, matcher:match(lines, 1))
-		assert.are.same({ data = {}, offset = 2, length = 1 }, matcher:match(lines, 2))
+		assert.are.same({ data = {}, length = 1 }, matcher:match(lines, 2))
 		assert.are.same(nil, matcher:match(lines, 3))
-
-		assert.are.same(
-			{
-				{ data = {}, offset = 2, length = 1 },
-				{ data = {}, offset = 5, length = 1 },
-			},
-			matcher:scan(lines)
-		)
+		assert.are.same({ data = {}, length = 1 }, matcher:match(lines, 5))
 	end)
 
 	it("should match a function returning a table", function()
@@ -104,16 +73,9 @@ describe("collect.matcher", function()
 		assert.is_truthy(matcher)
 		assert.are.same(1, matcher:get_context())
 		assert.are.same(nil, matcher:match(lines, 1))
-		assert.are.same({ data = { tail = "oo" }, offset = 2, length = 1 }, matcher:match(lines, 2))
+		assert.are.same({ data = { tail = "oo" }, length = 1 }, matcher:match(lines, 2))
 		assert.are.same(nil, matcher:match(lines, 3))
-
-		assert.are.same(
-			{
-				{ data = { tail = "oo" }, offset = 2, length = 1 },
-				{ data = { tail = "ou" }, offset = 5, length = 1 },
-			},
-			matcher:scan(lines)
-		)
+		assert.are.same({ data = { tail = "ou" }, length = 1 }, matcher:match(lines, 5))
 	end)
 
 	it("should match multiple lines", function()
@@ -127,15 +89,8 @@ describe("collect.matcher", function()
 		assert.is_truthy(matcher)
 		assert.are.same(2, matcher:get_context())
 		assert.are.same(nil, matcher:match(lines, 1))
-		assert.are.same({ data = { head = "f", tail = "oo", next = "bar" }, offset = 2, length = 2 }, matcher:match(lines, 2))
-
-		assert.are.same(
-			{
-				{ data = { head = "f", tail = "oo", next = "bar" }, offset = 2, length = 2 },
-				{ data = { head = "f", tail = "ou", next = "bar" }, offset = 5, length = 2 },
-			},
-			matcher:scan(lines)
-		)
+		assert.are.same({ data = { head = "f", tail = "oo", next = "bar" }, length = 2 }, matcher:match(lines, 2))
+		assert.are.same({ data = { head = "f", tail = "ou", next = "bar" }, length = 2 }, matcher:match(lines, 5))
 	end)
 
 	it("should fail on invalid type", function()

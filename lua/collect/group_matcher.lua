@@ -3,7 +3,8 @@
 --------------------------------------------------------------------------------
 
 local M = {}
-local Matcher = require("collect.matcher")
+
+---@alias Collect.GroupMatcher.Config { string: Collect.Matcher.Config[] }
 
 ---@class Collect.GroupMatcher
 ---@field groups { string: Collect.Matcher.Config } The group matcher configurations.
@@ -13,13 +14,14 @@ local GroupMatcher = {}
 GroupMatcher.__index = GroupMatcher
 
 ---Creates a matcher for a groups of matchers.
----@param config { string: Collect.Matcher.Config[] } A map of matcher configurations.
+---@param config Collect.GroupMatcher.Config? A map of matcher configurations.
 ---@return Collect.GroupMatcher The matcher object.
 function M.new(config)
+	local Matcher = require("collect.matcher")
 	local groups = {}
 
 	-- Create matchers for all the groups.
-	for name, group_config in pairs(config) do
+	for name, group_config in pairs(config or {}) do
 		local group = {}
 
 		for _, matcher_config in ipairs(group_config) do
@@ -38,7 +40,19 @@ function M.new(config)
 	return matcher
 end
 
----@return string[] # The currently selected match groups in order.
+---Returns all available match groups in order.
+function GroupMatcher:get_groups()
+	local groups = {}
+
+	for group, _ in pairs(self.groups) do
+		table.insert(groups, group)
+	end
+
+	table.sort(groups)
+	return groups
+end
+
+---Returns the selected match groups in order.
 function GroupMatcher:get_selected()
 	local groups = {}
 
@@ -83,34 +97,33 @@ end
 
 ---Scans the given lines for matches using all matchers of the current group.
 ---@param lines string[] The lines to scan.
----@return Collect.Matcher.Match[] # A list of matches.
+---@return Collect.Match[] # A list of matches.
 function GroupMatcher:scan(lines)
 	local matches = {}
+	local index = {}
 
-	for group, _ in pairs(self.enabled) do
-		local matchers = self.groups[group] or {}
+	for i = 1, #lines do
+		for group, _ in pairs(self.enabled) do
+			local matchers = self.groups[group] or {}
 
-		for _, matcher in ipairs(matchers) do
-			for _, match in ipairs(matcher:scan(lines)) do
-				local offset = match.offset
+			for _, matcher in ipairs(matchers) do
+				local match = matcher:match(lines, i)
 
-				-- For each offset only keep the match with the highest priority.
-				if matches[offset] == nil or matcher.priority >= matches[offset].matcher.priority then
-					match.matcher = matcher
-					matches[offset] = match
+				if match then
+					-- For each offset only keep the match with the highest priority.
+					if index[i] == nil or matcher.priority >= index[i].matcher.priority then
+						match.matcher = matcher
+						match.offset = i
+
+						index[i] = match
+						table.insert(matches, match)
+					end
 				end
 			end
 		end
 	end
 
-	-- Make a list.
-	local list = {}
-
-	for _, matcher in pairs(matches) do
-		table.insert(list, matcher)
-	end
-
-	return list
+	return matches
 end
 
 return M

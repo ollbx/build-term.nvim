@@ -1,8 +1,3 @@
-local Item = require("collect.item")
-
--- Matcher
--- GroupMatcher
-
 -- # Terminology:
 -- 
 -- The plugin provides a *terminal* window that can be toggled on and off. The output of
@@ -22,390 +17,238 @@ local Item = require("collect.item")
 -- to the current window, when a navigation action is triggered from a non-*terminal*
 -- window.
 
----@class Collect.Options
----@field match Collect.MatchConfig[]
+---@class Collect.Config
+---@field match Collect.GroupMatcher.Config? The group matcher conifguration.
 
-local M = {
-	namespace = vim.api.nvim_create_namespace("collect.nvim"),
-	matches = {},
-	known = {},
-	buffer = -1,
-	window = -1,
-	view = -1,
-	cur_mark = -1,
-	cur_index = 0,
-}
+---@class Collect.NavConfig
+---@field filter Collect.Terminal.FilterFun? A function to filter match results.
+---@field notify Collect.Terminal.NotifyFun? A function used to print a notification.
+---@field update_view boolean? `true` to update the view window.
+---@field mark_source boolean? `true` to mark the match source.
+---@field goto_source boolean? `true` to navigate to the match source.
+---@field goto_target boolean? `true` to navigate to the match target.
 
--------------------------------------------------------------------------------
--- Private functions
--------------------------------------------------------------------------------
+---@class Collect.Match
+---@field matcher Collect.Matcher? The matcher that produced the result.
+---@field offset integer? The match offset.
+---@field length integer The length of the match.
+---@field mark integer? The extmark ID in the terminal buffer.
+---@field data { string: string } The match data.
 
----Scans through items in the given direction, until `filter` returns a truthy value.
----Then sets `M._index` accordingly.
----@return `true` on success; `false` if no item was found.
-local function scan(opts, dir)
-	local def_opts = {
-		filter = function(_)
-			return true
-		end,
-		notify = function(index, total, item)
-			if index then
-				vim.notify("[" .. index .. "/" .. total .. "] " .. item.message)
-			else
-				vim.notify("No item found", vim.log.levels.WARN)
-			end
-		end
-	}
-
-	opts = vim.tbl_extend("force", def_opts, opts or {})
-
-	M.clear_mark()
-	local index = M.cur_index
-
-	while true do
-		index = index + dir
-
-		if index <= 0 or index > #M.matches then
-			opts.notify()
-			return false
-		end
-
-		if opts.filter(M.matches[index]) then
-			M.cur_index = index
-			opts.notify(M.cur_index, #M.matches, M.matches[M.cur_index])
-			return true
-		end
-	end
-end
-
----Runs the given function in the context of the terminal window.
----Then restores the previous window.
-local function with_window(fun)
-	local win = vim.api.nvim_get_current_win()
-	M.show(true)
-	fun()
-	vim.api.nvim_set_current_win(win)
-end
-
----Creates a matcher function from a matcher configuration.
-local function new_matcher(config)
-	if type(config) == "table" then
-		return function(line)
-			local groups = vim.fn.matchlist(line, config[1])
-			local result = {}
-
-			if groups[1] then
-				for i = 2, #groups do
-					result[groups[i]] = groups[i]
-				end
-
-				return result
-			else
-				return nil
-			end
-		end
-	elseif type(config) == "function" then
-		return config
-	else
-		vim.notify("Invalid matcher.", vim.log.levels.ERROR)
-		return nil
-	end
-end
+local M = {}
 
 -------------------------------------------------------------------------------
 -- Public API
 -------------------------------------------------------------------------------
 
 ---Sets up the plugin.
----@param opts Collect.Options|nil The configuration options.
-function M.setup(opts)
-	local def_opts = { match = {} }
-	M.opts = vim.tbl_deep_extend("force", def_opts, opts or {})
+---@param config Collect.Config? The plugin configuration.
+function M.setup(config)
+	local def_config = {
+		match = nil,
+		terminal = nil,
+		view = nil,
+	}
 
-	-- Configure components.
-	require("collect.terminal").setup(M.opts.terminal)
+	config = vim.tbl_extend("force", def_config, config or {})
 
-	require("collect.group_matcher").setup(M.opts.match)
+	local GroupMatcher = require("collect.group_matcher")
+	local Terminal = require("collect.terminal")
+	local View = require("collect.view")
+	local Builder = require("collect.builder")
+
+	local ok, err = pcall(function()
+		M.matcher = GroupMatcher.new(config.match)
+		M.terminal = Terminal.new(M.matcher, config.terminal)
+		M.view = View.new(config.view)
+		M.builder = Builder.new(M.matcher, M.terminal, config.build)
+	end)
+
+	if not ok then
+		vim.notify(err --[[@as string]], vim.log.levels.ERROR)
+	end
+
+	local complete = function()
+		return {
+			"toggle",
+			"open",
+			"open-focus",
+			"close",
+			"reset",
+			"send",
+			"next",
+			"prev",
+			"select",
+			"build",
+		}
+	end
+
+	local command = function(args)
+		local cmd = args.fargs[1]
+
+		if cmd == "toggle" then
+			M.toggle()
+		elseif cmd == "open" then
+			M.open()
+		elseif cmd == "open-focus" then
+			M.open({ focus = true })
+		elseif cmd == "close" then
+			M.close()
+		elseif cmd == "reset" then
+			M.reset()
+		elseif cmd == "send" then
+			M.send(string.sub(args.args, 5))
+		elseif cmd == "next" then
+			M.goto_next()
+		elseif cmd == "prev" then
+			M.goto_prev()
+		elseif cmd == "select" then
+			table.remove(args.fargs, 1)
+			M.select(unpack(args.fargs))
+		elseif cmd == "build" then
+			table.remove(args.fargs, 1)
+			M.build(unpack(args.fargs))
+		end
+	end
+
+	vim.api.nvim_create_user_command("BuildTerm", command, { nargs = "+", complete = complete })
+end
+
+---Opens the terminal split.
+---@param config Collect.Terminal.Config? Configuration overrides.
+function M.open(config)
+	M.terminal:open(config)
+end
+
+---Closes the terminal split.
+function M.close()
+	M.terminal:close()
+end
+
+---Resets the terminal. This will restart the shell process.
+function M.reset()
+	M.terminal:reset()
+end
+
+---@return `true` if the terminal split is currently open.
+function M.is_open()
+	return M.terminal:is_open()
+end
+
+---@return `true` if the terminal split is currently open and focused.
+function M.is_focused()
+	return M.terminal:is_focused()
+end
+
+---Toggles between closed and opened terminal split.
+---@param config Collect.Terminal.Config? Configuration overrides.
+function M.toggle(config)
+	M.terminal:toggle(config)
+end
+
+---Runs the specified command in the terminal.
+---@param command string[]|string The commands to run.
+function M.send(command)
+	M.terminal:send(command)
 end
 
 ---Clears the list of matched items.
-function M.clear()
-	M.cur_index = 0
-	M.cur_mark = -1
-	M.matches = {}
-	M.known = {}
-	vim.api.nvim_buf_clear_namespace(M.buffer, M.namespace, 0, -1)
+function M.clear_matches()
+	M.terminal:clear_matches()
 end
 
----Clears the current item mark.
-function M.clear_mark()
-	if M.cur_mark then
-		vim.api.nvim_buf_del_extmark(M.buffer, M.namespace, M.cur_mark)
-		M.cur_mark = nil
-	end
+---Clears the currently seleted item mark.
+function M.clear_selected_mark()
+	M.terminal:clear_selected_mark()
 end
 
----Clears / resets the terminal.
-function M.reset()
-	local show = vim.api.nvim_win_is_valid(M.window)
-	local active = vim.api.nvim_get_current_win() == M.window
-
-	M.hide()
-	M.clear()
-
-	if vim.api.nvim_buf_is_valid(M.buffer) then
-		vim.api.nvim_buf_delete(M.buffer, { force = true })
-		M.buffer = -1
-	end
-
-	if show then
-		M.show(active)
-	end
+---Returns the currently selected match.
+---@return Collect.Match? The currently selected match or nil.
+function M.get_current()
+	return M.terminal:get_current()
 end
 
----Navigates to the next item.
----See `goto_current` for available options.
-function M.goto_next(opts)
-	if scan(opts, 1) then
-		M.goto_current(opts)
-	end
+---Returns the list of matches.
+---@return Collect.Match[] The list of matches.
+function M.get_matches()
+	return M.terminal:get_matches()
 end
 
----Navigates to the previous item.
----See `goto_current` for available options.
-function M.goto_prev(opts)
-	if scan(opts, -1) then
-		M.goto_current(opts)
-	end
-end
-
----Navigates to the current item.
----
----# Options
----* mark_source: `true` to mark the source location in the terminal buffer.
----* goto_source: `true` to navigate to the source location in the terminal window.
----* goto_target: `true` to navigate to the target location in the view window.
-function M.goto_current(opts)
-	local item = M.matches[M.cur_index]
-
-	if item then
-		local def_opts = {
-			mark_source = true,
-			goto_source = true,
-			goto_target = true,
-		}
-
-		opts = vim.tbl_extend("force", def_opts, opts or {})
-
-		if opts.mark_source then
-			M.mark_source()
-		end
-
-		if opts.goto_source then
-			M.goto_source()
-		end
-
-		if opts.goto_target then
-			M.goto_target()
-		end
-	end
-end
-
----Sets the cursor in the terminal buffer to the source of the current item.
-function M.goto_source()
-	local item = M.matches[M.cur_index]
-
-	if item then
-		with_window(function()
-			vim.api.nvim_set_current_win(M.window)
-			vim.api.nvim_win_set_cursor(0, { item.msg_lnum, 0 })
-		end)
-	end
-end
-
----Marks the currently selected item in the terminal buffer.
-function M.mark_source()
-	local item = M.matches[M.cur_index]
-	M.clear_mark()
-
-	if item then
-		local opts = {
-			end_row = item.msg_lnum + #item.regex - 2,
-			hl_eol = true,
-			line_hl_group = "Visual",
-			hl_mode = "combine",
-		}
-
-		M.cur_mark = vim.api.nvim_buf_set_extmark(
-			item.msg_bufnr,
-			M.namespace,
-			item.msg_lnum - 1,
-			0,
-			opts)
-	end
-end
-
----Opens the path for the current match in the view window and sets the cursor position.
-function M.goto_target()
-	local item = M.matches[M.cur_index]
-
-	if item then
-		local view = vim.api.nvim_get_current_win()
-
-		if view ~= M.window then
-			M.view = view
-		else
-			view = M.view
-		end
-
-		if not vim.api.nvim_win_is_valid(view) then
-			vim.notify("No view window available.", vim.log.levels.WARN)
-			return
-		end
-
-		vim.api.nvim_set_current_win(view)
-
-		if vim.fn.filereadable(item.path) == 1 then
-			local lnum = tonumber(item.lnum)
-			local col = tonumber(item.col)
-			vim.cmd("silent edit " .. item.path)
-
-			if col then
-				col = col - 1
-			end
-
-			if lnum then
-				vim.api.nvim_win_set_cursor(0, { lnum, col or 0 })
-			end
-		else
-			vim.notify("File not found in current working directory.", vim.log.levels.ERROR)
-		end
-	end
-end
-
----Toggles the visibility of the terminal window.
----See `show` for available options.
-function M.toggle(opts)
-	if not vim.api.nvim_win_is_valid(M.window) then
-		M.show(opts)
-	else
-		M.hide()
-	end
-end
-
----Shows the terminal window.
----
----# Options
----* focus:  `true` to move the cursor into the terminal buffer.
----* insert: `true` to enter insert mode after focusing the terminal buffer.
-function M.show(opts)
-	local def_opts = {
-		focus  = false,
-		insert = true,
+---Navigates to a new match.
+---@param config Collect.NavConfig? Navigation configuration options.
+---@param fun fun(): Collect.Match? Function to navigate to a new match.
+---@return Collect.Match? The found match or `nil`.
+local function navigate(config, fun)
+	local def_config = {
+		update_view = true,
+		goto_target = true,
 	}
 
-	opts = vim.tbl_extend("force", def_opts, opts)
+	config = vim.tbl_extend("force", def_config, config or {})
 
-	if not vim.api.nvim_buf_is_valid(M.buffer) then
-		M.buffer = vim.api.nvim_create_buf(false, true)
-	end
+	if config.update_view then
+		local terminal_win = M.terminal:get_window()
+		local current_win = vim.api.nvim_get_current_win()
 
-	if not vim.api.nvim_win_is_valid(M.window) then
-		local height = math.floor(vim.o.lines / 4)
-		local win = vim.api.nvim_get_current_win()
-
-		M.window = vim.api.nvim_open_win(M.buffer, true, {
-			split  = "below",
-			win    = -1,
-			height = height,
-		})
-
-		vim.opt_local.nu = false
-		vim.opt_local.relativenumber = false
-
-		if vim.bo[M.buffer].buftype ~= "terminal" then
-			vim.cmd.terminal("nu")
-
-			vim.api.nvim_buf_attach(M.buffer, false, {
-				on_lines = function(_, _, _, first, last)
-					local items = Item.match(M.buffer, first, last, M.opts.match)
-
-					for _, item in ipairs(items) do
-						if not M.known[item.key] then
-							table.insert(M.matches, item)
-							M.known[item.key] = true
-
-							local opts = {
-								end_row = item.msg_lnum + #item.regex - 2,
-								hl_eol = true,
-								sign_text = "H",
-								line_hl_group = "DiagnosticSignHint",
-								sign_hl_group = "DiagnosticSignHint",
-								hl_mode = "combine",
-							}
-
-							if item.type == "error" then
-								opts.sign_text = "E"
-								opts.sign_hl_group = "DiagnosticSignError"
-								opts.line_hl_group = "DiagnosticSignError"
-							elseif item.type == "warn" then
-								opts.sign_text = "W"
-								opts.sign_hl_group = "DiagnosticSignWarn"
-								opts.line_hl_group = "DiagnosticSignWarn"
-							elseif item.type == "info" then
-								opts.sign_text = "I"
-								opts.sign_hl_group = "DiagnosticSignInfo"
-								opts.line_hl_group = "DiagnosticSignInfo"
-							end
-
-							vim.api.nvim_buf_set_extmark(
-								item.msg_bufnr,
-								M.namespace,
-								item.msg_lnum - 1,
-								0,
-								opts)
-						end
-					end
-				end
-			})
+		if current_win ~= terminal_win then
+			M.view:set_window(current_win)
 		end
-
-		if opts.focus then
-			if opts.insert then
-				vim.cmd.startinsert()
-			end
-		else
-			vim.api.nvim_set_current_win(win)
-		end
-	elseif opts.focus then
-		vim.api.nvim_set_current_win(M.window)
 	end
+
+	local match = fun()
+
+	if config.goto_target then
+		M.view:goto_match(match)
+	end
+
+	return match
 end
 
----Hides the terminal window.
-function M.hide()
-	if vim.api.nvim_win_is_valid(M.window) then
-		vim.api.nvim_win_hide(M.window)
-		M.window = -1
-	end
+---Navigates to the next match.
+---@param config Collect.NavConfig? Navigation configuration options.
+---@return Collect.Match? The found match or `nil`.
+function M.goto_next(config)
+	return navigate(config, function()
+		return M.terminal:goto_next(config)
+	end)
 end
 
----Sends a command to the terminal.
----@param cmd string The command to run.
-function M.send(cmd)
-	if M.buffer >= 0 then
-		vim.fn.chansend(vim.bo[M.buffer].channel, cmd .. "\r\n")
-
-		-- Move to the end of the buffer (so that it auto-scrolls).
-		with_window(function() vim.cmd("norm G") end)
-	end
+---Navigates to the previous match.
+---@param config Collect.NavConfig? Navigation configuration options.
+---@return Collect.Match? The found match or `nil`.
+function M.goto_prev(config)
+	return navigate(config, function()
+		return M.terminal:goto_prev(config)
+	end)
 end
 
-function M.build()
-	M.show()
-	M.clear()
-	M.send("clear")
-	M.send("cargo build")
+---Navigates and marks the given match.
+---@param match Collect.Match? The match to navigate to.
+---@param config Collect.NavConfig? Navigation configuration options.
+function M.goto_match(match, config)
+	return navigate(config, function()
+		return M.terminal:goto_match(match, config)
+	end)
+end
+
+---Returns the currently selected match groups.
+function M.get_selected_groups()
+	return M.matcher:get_selected()
+end
+
+---Returns all available match groups in order.
+function M.get_groups()
+	return M.matcher:get_groups()
+end
+
+---Sets the enabled match groups.
+function M.select(...)
+	return M.matcher:select(...)
+end
+
+---Runs the first matching build command with the given args.
+function M.build(...)
+	M.builder:build(...)
 end
 
 return M
