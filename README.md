@@ -2,6 +2,8 @@
 
 Toggleable terminal for neovim with error matching.
 
+_Warning_: still in active development.
+
 ## Features
 
 - Minimalistic and highly customizable.
@@ -58,6 +60,6 @@ return {
 }
 ```
 
-## Customization example
+## Customization examples
 
 Coming soon...
