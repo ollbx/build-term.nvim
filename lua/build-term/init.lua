@@ -80,6 +80,7 @@ function M.setup(config)
 			"next",
 			"prev",
 			"select",
+			"select-ui",
 			"build",
 		}
 	end
@@ -122,6 +123,8 @@ function M.setup(config)
 		elseif cmd == "select" then
 			table.remove(args.fargs, 1)
 			M.select(unpack(args.fargs))
+		elseif cmd == "select-ui" then
+			M.select_ui()
 		elseif cmd == "build" then
 			table.remove(args.fargs, 1)
 			M.build(unpack(args.fargs))
@@ -261,6 +264,17 @@ end
 ---Sets the enabled match groups.
 function M.select(...)
 	return M.matcher:select(...)
+end
+
+---Selects the match group using the UI.
+function M.select_ui()
+	vim.ui.select(M.get_groups(), {
+		prompt = "Select match group:"
+	}, function(choice)
+		if choice then
+			M.select(choice)
+		end
+	end)
 end
 
 ---Runs the first matching build command with the given args.
