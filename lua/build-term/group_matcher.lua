@@ -110,13 +110,17 @@ function GroupMatcher:scan(lines)
 				local match = matcher:match(lines, i)
 
 				if match then
-					-- For each offset only keep the match with the highest priority.
-					if index[i] == nil or matcher.priority >= index[i].matcher.priority then
-						match.matcher = matcher
-						match.offset = i
+					match.matcher = matcher
+					match.offset = i
 
+					if index[i] == nil then
+						-- Append the match at the end.
 						index[i] = match
 						table.insert(matches, match)
+					elseif matcher.priority >= index[i].matcher.priority then
+						-- Replace the last match, if the new one has higher priority.
+						index[i] = match
+						matches[#matches] = match
 					end
 				end
 			end
