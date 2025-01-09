@@ -1,7 +1,7 @@
 ---@diagnostic disable: need-check-nil, invisible
-local GroupMatcher = require("build-term.group_matcher")
-
 local function new_matcher()
+	local GroupMatcher = require("build-term.group_matcher")
+
 	return GroupMatcher.new({
 		default = {
 			{ match = { [=[\(.\)\(o[ou]\)]=], "a", "b" } },

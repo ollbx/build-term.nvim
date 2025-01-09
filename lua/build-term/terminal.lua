@@ -308,14 +308,7 @@ end
 ---Returns the list of matches.
 ---@return BuildTerm.Match[] The list of matches.
 function Terminal:get_matches()
-	local proxy = {}
-	setmetatable(proxy, {
-		__index = self.matches,
-		__newindex = function()
-			error("attempt to update a read-only table")
-		end
-	})
-	return proxy
+	return self.matches
 end
 
 ---Scans the match list in the given direction.
