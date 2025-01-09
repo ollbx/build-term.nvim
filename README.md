@@ -58,6 +58,7 @@ return {
         { "<leader>bb", "<cmd>BuildTerm build<cr>", desc = "Build" },
         { "<leader>bc", "<cmd>BuildTerm build clean<cr>", desc = "Clean" },
         { "<leader>bd", "<cmd>BuildTerm build doc<cr>", desc = "Build Docs" },
+        { "<leader>bg", "<cmd>BuildTerm select-ui<cr>", desc = "Select match group" },
     }
 }
 ```
