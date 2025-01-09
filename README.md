@@ -86,43 +86,47 @@ default. Any other group can be selected by:
 
 - Calling `:BuildTerm select [group...]`
 - Calling `:BuildTerm select-ui`
-- Running a build with the `select = ...` option.
+- Running a builder with the `select = ...` option.
 
 Each group consists of a list of matchers that are used to match terminal output.
 
-## Matcher
+## Matchers
+
+```lua
+{ match = "something" }
+{ lines = { "something", match2, ... } }
+```
 
 A one-line matcher is specified by providing a value to the `match` key, whereas
-multi-line use `lines = { match1, match2, ... }` to specify match on consecutive
-lines. Note that `match = x` is equal to `lines = { x }`.
+multi-line matchers use `lines = { match1, match2, ... }` to specify required matches
+on consecutive lines. Note that `match = x` is equal to `lines = { x }`.
 
 Matchers are evaluated against lines of output from the terminal and will produce
-a `match item` on a successful match. A `match item` stores information related to
+a _match item_ on a successful match. A _match item_ stores information related to
 the match, such as the `message`, the line number `lnum` or the `type`.
 
 ### Simple regex
 
 ```lua
-{ match = "something" }
-{ match = [[error: \(.*\)]] }
+"something"
+[[error: \(.*\)]]
 ```
 
 Specifying a `string` value will interpret the string as a regular expression.
 If the regular expression contains match groups, the text matched by the first match
 group will be used as the `message` of the resulting match item.
 
-Note: if you do not want to set `message`, you can use a non-capturing group, as in
-`{ match = [[error: \%\(.*\)]] }`.
+Note: you can suppress this with a non-capturing group, such as: `[[error: \%\(.*\)]]`.
 
 ### Extended regex
 
 ```lua
-{ match = { [[\(error\|warning\).*:\s*\(.*\)]], "type", "message" } }
+{ [[\(error\|warning\).*:\s*\(.*\)]], "type", "message" }
 ```
 
 By specifying a list of strings, you can assign names to multiple capture groups.
-The matched values are assigned to the match item and can later be accessed, by
-querying `item.data.[name]`.
+The matched values are assigned to the match item and can be accessed in lua code using
+`item.data.[name]` (see `get_matches()`).
 
 There are a few special names that you can match:
 
@@ -139,24 +143,20 @@ There are a few special names that you can match:
 You can also match the line using an arbitrary lua function:
 
 ```lua
-{
-    match = function(line)
-        return line:sub(1, 6) == "error:"
-    end
-}
+function(line)
+    return line:sub(1, 6) == "error:"
+end
 ```
 
 If the function returns a `boolean` value, it will just create an empty match item,
 without any `message` or other metadata.
 
 ```lua
-{
-    match = function(line)
-        if line:sub(1, 6) == "error:" then
-            return { message = line:sub(7) }
-        end
+function(line)
+    if line:sub(1, 6) == "error:" then
+        return { message = line:sub(7) }
     end
-}
+end
 ```
 
 But you can also return a table with additional data, similar to the match groups
