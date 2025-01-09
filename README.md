@@ -1,4 +1,4 @@
-# toggle-term.nvim
+# build-term.nvim
 
 Toggleable terminal for neovim with error matching.
 
