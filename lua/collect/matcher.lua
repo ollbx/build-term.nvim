@@ -2,13 +2,6 @@
 -- Types
 --------------------------------------------------------------------------------
 
----@class Collect.Matcher.Match
----@field matcher Collect.Matcher? The matcher that produced the result.
----@field offset integer The match offset.
----@field length integer The length of the match.
----@field mark integer? The extmark ID in the terminal buffer.
----@field data { string: string } The match data.
-
 ---@alias Collect.Matcher.LineMatcher fun(line: string): { string: string }|boolean|nil
 ---@alias Collect.Matcher.LineConfig string|string[]|Collect.Matcher.LineMatcher
 
@@ -130,7 +123,7 @@ end
 ---Tries to match the lines at the given offset.
 ---@param lines string[] The lines to match against.
 ---@param offset integer The offset to match at.
----@return Collect.Matcher.Match? The matched data or `nil`.
+---@return Collect.Match? The matched data or `nil`.
 function Matcher:match(lines, offset)
 	local result = {}
 
@@ -153,27 +146,9 @@ function Matcher:match(lines, offset)
 	end
 
 	return {
-		offset = offset,
 		length = #self.matchers,
 		data = result,
 	}
-end
-
----Finds all matches in the given array of lines.
----@param lines string[] The lines to match against.
----@return Collect.Matcher.Match[] A list of matches (in order).
-function Matcher:scan(lines)
-	local matches = {}
-
-	for i = 1, #lines do
-		local match = self:match(lines, i)
-
-		if match then
-			table.insert(matches, match)
-		end
-	end
-
-	return matches
 end
 
 return M
