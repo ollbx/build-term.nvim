@@ -120,14 +120,17 @@ function Terminal:handle_output(first, last)
 			hl_mode = "combine",
 		}
 
-		if match.matcher.type == "error" then
+		if match.type == "err" or match.type == "error" then
 			config.sign_text = "E"
 			config.sign_hl_group = "DiagnosticSignError"
-		elseif match.matcher.type == "warn" then
+		elseif match.type == "warn" or match.type == "warning" then
 			config.sign_text = "W"
 			config.sign_hl_group = "DiagnosticSignWarn"
-		elseif match.matcher.type == "info" then
+		elseif match.type == "info" then
 			config.sign_text = "I"
+			config.sign_hl_group = "DiagnosticSignInfo"
+		elseif match.type == "debug" then
+			config.sign_text = "D"
 			config.sign_hl_group = "DiagnosticSignInfo"
 		end
 
