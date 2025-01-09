@@ -17,19 +17,19 @@
 -- to the current window, when a navigation action is triggered from a non-*terminal*
 -- window.
 
----@class Collect.Config
----@field match Collect.GroupMatcher.Config? The group matcher conifguration.
+---@class BuildTerm.Config
+---@field match BuildTerm.GroupMatcher.Config? The group matcher conifguration.
 
----@class Collect.NavConfig
----@field filter Collect.Terminal.FilterFun? A function to filter match results.
----@field notify Collect.Terminal.NotifyFun? A function used to print a notification.
+---@class BuildTerm.NavConfig
+---@field filter BuildTerm.Terminal.FilterFun? A function to filter match results.
+---@field notify BuildTerm.Terminal.NotifyFun? A function used to print a notification.
 ---@field update_view boolean? `true` to update the view window.
 ---@field mark_source boolean? `true` to mark the match source.
 ---@field goto_source boolean? `true` to navigate to the match source.
 ---@field goto_target boolean? `true` to navigate to the match target.
 
----@class Collect.Match
----@field matcher Collect.Matcher? The matcher that produced the result.
+---@class BuildTerm.Match
+---@field matcher BuildTerm.Matcher? The matcher that produced the result.
 ---@field offset integer? The match offset.
 ---@field length integer The length of the match.
 ---@field mark integer? The extmark ID in the terminal buffer.
@@ -42,7 +42,7 @@ local M = {}
 -------------------------------------------------------------------------------
 
 ---Sets up the plugin.
----@param config Collect.Config? The plugin configuration.
+---@param config BuildTerm.Config? The plugin configuration.
 function M.setup(config)
 	local def_config = {
 		match = nil,
@@ -52,10 +52,10 @@ function M.setup(config)
 
 	config = vim.tbl_extend("force", def_config, config or {})
 
-	local GroupMatcher = require("collect.group_matcher")
-	local Terminal = require("collect.terminal")
-	local View = require("collect.view")
-	local Builder = require("collect.builder")
+	local GroupMatcher = require("build-term.group_matcher")
+	local Terminal = require("build-term.terminal")
+	local View = require("build-term.view")
+	local Builder = require("build-term.builder")
 
 	local ok, err = pcall(function()
 		M.matcher = GroupMatcher.new(config.match)
@@ -115,7 +115,7 @@ function M.setup(config)
 end
 
 ---Opens the terminal split.
----@param config Collect.Terminal.Config? Configuration overrides.
+---@param config BuildTerm.Terminal.Config? Configuration overrides.
 function M.open(config)
 	M.terminal:open(config)
 end
@@ -141,7 +141,7 @@ function M.is_focused()
 end
 
 ---Toggles between closed and opened terminal split.
----@param config Collect.Terminal.Config? Configuration overrides.
+---@param config BuildTerm.Terminal.Config? Configuration overrides.
 function M.toggle(config)
 	M.terminal:toggle(config)
 end
@@ -163,21 +163,21 @@ function M.clear_selected_mark()
 end
 
 ---Returns the currently selected match.
----@return Collect.Match? The currently selected match or nil.
+---@return BuildTerm.Match? The currently selected match or nil.
 function M.get_current()
 	return M.terminal:get_current()
 end
 
 ---Returns the list of matches.
----@return Collect.Match[] The list of matches.
+---@return BuildTerm.Match[] The list of matches.
 function M.get_matches()
 	return M.terminal:get_matches()
 end
 
 ---Navigates to a new match.
----@param config Collect.NavConfig? Navigation configuration options.
----@param fun fun(): Collect.Match? Function to navigate to a new match.
----@return Collect.Match? The found match or `nil`.
+---@param config BuildTerm.NavConfig? Navigation configuration options.
+---@param fun fun(): BuildTerm.Match? Function to navigate to a new match.
+---@return BuildTerm.Match? The found match or `nil`.
 local function navigate(config, fun)
 	local def_config = {
 		update_view = true,
@@ -205,8 +205,8 @@ local function navigate(config, fun)
 end
 
 ---Navigates to the next match.
----@param config Collect.NavConfig? Navigation configuration options.
----@return Collect.Match? The found match or `nil`.
+---@param config BuildTerm.NavConfig? Navigation configuration options.
+---@return BuildTerm.Match? The found match or `nil`.
 function M.goto_next(config)
 	return navigate(config, function()
 		return M.terminal:goto_next(config)
@@ -214,8 +214,8 @@ function M.goto_next(config)
 end
 
 ---Navigates to the previous match.
----@param config Collect.NavConfig? Navigation configuration options.
----@return Collect.Match? The found match or `nil`.
+---@param config BuildTerm.NavConfig? Navigation configuration options.
+---@return BuildTerm.Match? The found match or `nil`.
 function M.goto_prev(config)
 	return navigate(config, function()
 		return M.terminal:goto_prev(config)
@@ -223,8 +223,8 @@ function M.goto_prev(config)
 end
 
 ---Navigates and marks the given match.
----@param match Collect.Match? The match to navigate to.
----@param config Collect.NavConfig? Navigation configuration options.
+---@param match BuildTerm.Match? The match to navigate to.
+---@param config BuildTerm.NavConfig? Navigation configuration options.
 function M.goto_match(match, config)
 	return navigate(config, function()
 		return M.terminal:goto_match(match, config)
