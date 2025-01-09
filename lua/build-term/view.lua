@@ -1,13 +1,13 @@
 local M = {}
 
----@class Collect.View.Config
----@field open fun(Collect.Match): boolean Function used to open the file for a match.
----@field goto fun(Collect.Match) Navigates to the match cursor position.
+---@class BuildTerm.View.Config
+---@field open fun(BuildTerm.Match): boolean Function used to open the file for a match.
+---@field goto fun(BuildTerm.Match) Navigates to the match cursor position.
 ---@field find_view fun(): integer? Function to find a new view window.
 
----@class Collect.View
+---@class BuildTerm.View
 ---@field window integer The ID of the view window or -1.
----@field config Collect.View.Config The view config.
+---@field config BuildTerm.View.Config The view config.
 ---@field private __index any
 local View = {}
 View.__index = View
@@ -83,8 +83,8 @@ function View:set_window(id)
 end
 
 ---Navigates to the given match.
----@param match Collect.Match? The match to navigate to.
----@param config Collect.View.Config? View config overrides.
+---@param match BuildTerm.Match? The match to navigate to.
+---@param config BuildTerm.View.Config? View config overrides.
 function View:goto_match(match, config)
 	config = vim.tbl_extend("force", self.config, config or {})
 

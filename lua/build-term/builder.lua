@@ -1,29 +1,29 @@
 local M = {}
 
----@alias Collect.Builder.CommandFun fun(...): string[]|string
----@alias Collect.Builder.Config Collect.Builder.CommandConfig[]
----@alias Collect.Builder.TriggerFun fun(): boolean
+---@alias BuildTerm.Builder.CommandFun fun(...): string[]|string
+---@alias BuildTerm.Builder.Config BuildTerm.Builder.CommandConfig[]
+---@alias BuildTerm.Builder.TriggerFun fun(): boolean
 ---
----@class Collect.Builder.CommandConfig
+---@class BuildTerm.Builder.CommandConfig
 ---@field priority integer? The selection priority.
----@field trigger string|Collect.Builder.TriggerFun The build command trigger.
+---@field trigger string|BuildTerm.Builder.TriggerFun The build command trigger.
 ---@field select string[]? The groups to select.
 ---@field clear boolean? `true` to clear the matches before the build.
 ---@field reset boolean? `true` to reset the terminal before the build.
----@field command string|string[]|Collect.Builder.CommandFun
+---@field command string|string[]|BuildTerm.Builder.CommandFun
 
----@class Collect.Builder.Command
+---@class BuildTerm.Builder.Command
 ---@field priority integer The selection priority.
 ---@field trigger fun(): boolean Function to trigger a builder.
 ---@field select string[]? The groups to select.
 ---@field clear boolean `true` to clear the matches before the build.
 ---@field reset boolean `true` to reset the terminal before the build.
----@field command Collect.Builder.CommandFun The command builder.
+---@field command BuildTerm.Builder.CommandFun The command builder.
 
----@class Collect.Builder
----@field commands Collect.Builder.Command[] The build commands.
----@field matcher Collect.GroupMatcher The group matcher to use.
----@field terminal Collect.Terminal The terminal to use.
+---@class BuildTerm.Builder
+---@field commands BuildTerm.Builder.Command[] The build commands.
+---@field matcher BuildTerm.GroupMatcher The group matcher to use.
+---@field terminal BuildTerm.Terminal The terminal to use.
 ---@field private __index any
 local Builder = {}
 Builder.__index = Builder
@@ -70,10 +70,10 @@ local function to_list(config)
 end
 
 ---Creates a new builder.
----@param matcher Collect.GroupMatcher The group matcher to use.
----@param terminal Collect.Terminal The terminal to use.
----@param config Collect.Builder.Config? The builder config to use.
----@return Collect.Builder
+---@param matcher BuildTerm.GroupMatcher The group matcher to use.
+---@param terminal BuildTerm.Terminal The terminal to use.
+---@param config BuildTerm.Builder.Config? The builder config to use.
+---@return BuildTerm.Builder
 function M.new(matcher, terminal, config)
 	local commands = {}
 

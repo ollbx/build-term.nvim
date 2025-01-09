@@ -1,5 +1,5 @@
 ---@diagnostic disable: need-check-nil, invisible
-local GroupMatcher = require("collect.group_matcher")
+local GroupMatcher = require("build-term.group_matcher")
 
 local function new_matcher()
 	return GroupMatcher.new({
