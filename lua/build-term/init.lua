@@ -18,7 +18,10 @@
 -- window.
 
 ---@class BuildTerm.Config
----@field match BuildTerm.GroupMatcher.Config? The group matcher conifguration.
+---@field match BuildTerm.GroupMatcher.Config? The group matcher configuration.
+---@field terminal BuildTerm.Terminal.Config? The terminal configuration.
+---@field view BuildTerm.View.Config? The view configuration.
+---@field select_rebuild boolean? `true` to rebuild matches on select.
 
 ---@class BuildTerm.NavConfig
 ---@field filter BuildTerm.Terminal.FilterFun? A function to filter match results.
@@ -49,9 +52,11 @@ function M.setup(config)
 		match = nil,
 		terminal = nil,
 		view = nil,
+		select_rebuild = true,
 	}
 
 	config = vim.tbl_extend("force", def_config, config or {})
+	M.config = config
 
 	local GroupMatcher = require("build-term.group_matcher")
 	local Terminal = require("build-term.terminal")
@@ -263,7 +268,11 @@ end
 
 ---Sets the enabled match groups.
 function M.select(...)
-	return M.matcher:select(...)
+	M.matcher:select(...)
+
+	if M.config.select_rebuild then
+		M.rebuild_matches()
+	end
 end
 
 ---Selects the match group using the UI.
@@ -275,6 +284,11 @@ function M.select_ui()
 			M.select(choice)
 		end
 	end)
+end
+
+---Rebuilds the list of matches with the selected groups.
+function M.rebuild_matches()
+	M.terminal:rebuild_matches()
 end
 
 ---Runs the first matching build command with the given args.

@@ -83,10 +83,19 @@ end
 ---Handles new output on the terminal buffer.
 ---@private
 function Terminal:handle_output(first, last)
+	if not vim.api.nvim_buf_is_valid(self.buffer) then
+		return
+	end
+
 	-- Extend the area by the context required.
 	local context = self.matcher:get_context()
 	first = math.max(0, first - context)
-	last = last + context
+
+	if last < 0 then
+		last = -1
+	else
+		last = last + context
+	end
 
 	-- Retrieve the changed lines and match on them.
 	local lines = vim.api.nvim_buf_get_lines(self.buffer, first, last, false)
@@ -280,6 +289,12 @@ function Terminal:send(command, config)
 			vim.api.nvim_set_current_win(prev_win)
 		end
 	end
+end
+
+---Rebuilds the list of matches with the selected groups.
+function Terminal:rebuild_matches()
+	self:clear_matches()
+	self:handle_output(0, -1)
 end
 
 ---Clears the list of matched items.
