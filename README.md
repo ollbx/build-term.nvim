@@ -22,8 +22,7 @@ return {
         match = {
             default = {
                 {
-                    type = "error",
-                    match = { "error:\\s*\\(.*\\)", "message" }
+                    match = { [[\(error\|warning\|warn\|info\|debug\):\s*\(.*\)]], "type", "message" }
                 }
             },
             rust = {
