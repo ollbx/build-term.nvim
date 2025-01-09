@@ -1,6 +1,14 @@
 # toggle-term.nvim
 
-Currently in development...
+Toggleable terminal for neovim with error matching.
+
+## Features
+
+- Minimalistic and highly customizable.
+- Error matching using regular expressions or lua functions.
+- Support for matching multi-line error messages.
+- Build command auto-detection (based on files or custom lua function).
+- Multiple match configurations for different languages / build tools.
 
 ## Lazy.nvim setup example
 
@@ -49,3 +57,7 @@ return {
 	}
 }
 ```
+
+## Customization example
+
+Coming soon...
