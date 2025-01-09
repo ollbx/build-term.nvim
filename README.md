@@ -28,8 +28,8 @@ return {
             rust = {
                 {
                     lines = {
-                        { [[\(error\|warning\).*: \(.*\)]], "type", "message" },
-                        { [[--> \(.*\):\(\d\+\):\(\d\+\)]], "filename", "lnum", "col" }
+                        { [[\(error\|warning\).*:\s*\(.*\)]], "type", "message" },
+                        { [[-->\s*\(.*\):\(\d\+\):\(\d\+\)]], "filename", "lnum", "col" }
                     },
                 }
             }
