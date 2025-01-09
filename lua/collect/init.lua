@@ -1,5 +1,8 @@
 local Item = require("collect.item")
 
+-- Matcher
+-- GroupMatcher
+
 -- # Terminology:
 -- 
 -- The plugin provides a *terminal* window that can be toggled on and off. The output of
@@ -118,6 +121,11 @@ end
 function M.setup(opts)
 	local def_opts = { match = {} }
 	M.opts = vim.tbl_deep_extend("force", def_opts, opts or {})
+
+	-- Configure components.
+	require("collect.terminal").setup(M.opts.terminal)
+
+	require("collect.group_matcher").setup(M.opts.match)
 end
 
 ---Clears the list of matched items.
