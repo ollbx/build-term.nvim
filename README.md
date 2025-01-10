@@ -228,3 +228,14 @@ Other builder options are:
 # Lua interface
 
 TODO
+
+# FAQ
+
+TODO
+
+# Planned features
+
+- [ ] Send the matched items to the quickfix list.
+- [ ] Navigate to item below the cursor.
+- [ ] Predefined commands / matchers for common languages?
+
