@@ -105,7 +105,7 @@ Matchers are evaluated against lines of output from the terminal and will produc
 a _match item_ on a successful match. A _match item_ stores information related to
 the match, such as the `message`, the line number `lnum` or the `type`.
 
-### Simple regex
+### Match a regex without named groups
 
 ```lua
 "something"
@@ -116,9 +116,9 @@ Specifying a `string` value will interpret the string as a regular expression.
 If the regular expression contains match groups, the text matched by the first match
 group will be used as the `message` of the resulting match item.
 
-Note: you can suppress this with a non-capturing group, such as: `[[error: \%\(.*\)]]`.
+*Note*: you can suppress this with a non-capturing group, such as: `[[error: \%\(.*\)]]`.
 
-### Extended regex
+### Match a regex with named groups
 
 ```lua
 { [[\(error\|warning\).*:\s*\(.*\)]], "type", "message" }
@@ -127,6 +127,8 @@ Note: you can suppress this with a non-capturing group, such as: `[[error: \%\(.
 By specifying a list of strings, you can assign names to multiple capture groups.
 The matched values are assigned to the match item and can be accessed in lua code using
 `item.data.[name]` (see `get_matches()`).
+
+*Note*: you can use non-capturing groups `\%\(...\)` if you need a group without a name.
 
 There are a few special names that you can match:
 
@@ -138,7 +140,7 @@ There are a few special names that you can match:
 | `lnum`     | The line number for the error. |
 | `col`      | The column number for the error. |
 
-### Lua function
+### Match using a lua function
 
 You can also match the line using an arbitrary lua function:
 
@@ -187,9 +189,9 @@ build = {
 }
 ```
 
-You can configure several builders through `opts.build`. When a build is issued using the
-`:BuildTerm build` command, the list of builders is iterated (ordered by descending priority).
-The first builder that has a matching trigger will be selected for the build.
+You can configure several builders through `opts.build`. When a build is started using the
+`:BuildTerm build` command, the list of builders is iterated (by priority). The first builder
+that has a matching trigger will be selected for the build.
 
 ### Build triggers
 
@@ -215,7 +217,7 @@ send line-by-line input to the terminal.
 
 ### Other builder options
 
-Other builder options of note are:
+Other builder options are:
 
 - `select` to specify the match group to switch to before starting the build. This can also
   be a list, to select multiple match groups.
@@ -223,6 +225,6 @@ Other builder options of note are:
 - `reset` can be set to `true` to reset the terminal before the build.
 - `clear` can be set to `true` to clear the match list before the build.
 
-## Customization examples
+# Lua interface
 
-Coming soon...
+TODO
