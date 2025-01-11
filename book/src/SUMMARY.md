@@ -6,5 +6,5 @@
   - [Builders](./config-build.md)
 - [Usage](./usage.md)
   - [Terminology](./terminology.md)
-  - [Command interface](./command.md)
+  - [Commands](./commands.md)
   - [Lua interface](./lua.md)

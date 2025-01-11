@@ -41,9 +41,6 @@ opts = {
 
     -- Configuration options related to the terminal window.
     terminal = {
-        -- Whether to focus the terminal automatically on open.
-        focus = false,
-
         -- The shell to run. Same as ":term [shell]".
         shell = nil,
 

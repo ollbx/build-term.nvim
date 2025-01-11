@@ -90,15 +90,15 @@ function M.setup(config)
 		}
 	end
 
-	local function make_filter(arg)
+	local function make_filter(args)
 		local types = {}
 
-		if arg == nil then
+		if #args == 0 then
 			return function() return true end
 		end
 
-		for type in string.gmatch(arg, "([^,]+)") do
-			types[type] = true
+		for _, arg in ipairs(args) do
+			types[arg] = true
 		end
 
 		return function(item)
@@ -111,10 +111,10 @@ function M.setup(config)
 
 		if cmd == "toggle" then
 			M.toggle()
+		elseif cmd == "show" then
+			M.show()
 		elseif cmd == "open" then
 			M.open()
-		elseif cmd == "focus" then
-			M.open({ focus = true })
 		elseif cmd == "close" then
 			M.close()
 		elseif cmd == "reset" then
@@ -122,9 +122,11 @@ function M.setup(config)
 		elseif cmd == "send" then
 			M.send(string.sub(args.args, 5))
 		elseif cmd == "next" then
-			M.goto_next({ filter = make_filter(args.fargs[2]) })
+			table.remove(args.fargs, 1)
+			M.goto_next({ filter = make_filter(args.fargs) })
 		elseif cmd == "prev" then
-			M.goto_prev({ filter = make_filter(args.fargs[2]) })
+			table.remove(args.fargs, 1)
+			M.goto_prev({ filter = make_filter(args.fargs) })
 		elseif cmd == "select" then
 			table.remove(args.fargs, 1)
 			M.select(unpack(args.fargs))
@@ -133,16 +135,25 @@ function M.setup(config)
 		elseif cmd == "build" then
 			table.remove(args.fargs, 1)
 			M.build(unpack(args.fargs))
+		else
+			vim.notify("Error: unrecognized command", vim.log.levels.ERROR)
 		end
 	end
 
 	vim.api.nvim_create_user_command("BuildTerm", command, { nargs = "+", complete = complete })
 end
 
----Opens the terminal split.
----@param config BuildTerm.Terminal.Config? Configuration overrides.
+---Opens the terminal window without changing focus to it.
+---@param config BuildTerm.Terminal.ShowConfig? Configuration overrides.
+function M.show(config)
+	M.terminal:show(config)
+end
+
+---Opens the terminal window and changes focus to it.
+---@param config BuildTerm.Terminal.ShowConfig? Configuration overrides.
 function M.open(config)
-	M.terminal:open(config)
+	config = vim.tbl_extend("force", config or {}, { focus = true })
+	M.terminal:show(config)
 end
 
 ---Closes the terminal split.
@@ -166,7 +177,7 @@ function M.is_focused()
 end
 
 ---Toggles between closed and opened terminal split.
----@param config BuildTerm.Terminal.Config? Configuration overrides.
+---@param config BuildTerm.Terminal.ShowConfig? Configuration overrides.
 function M.toggle(config)
 	M.terminal:toggle(config)
 end

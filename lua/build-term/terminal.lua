@@ -7,13 +7,15 @@
 ---@alias BuildTerm.Terminal.FilterFun fun(match: BuildTerm.Match): boolean?
 ---@alias BuildTerm.Terminal.ExtMarkConfigFun fun(BuildTerm.Match): vim.api.keyset.set_extmark
 
----@class BuildTerm.Terminal.Config
----@field focus boolean? `true` to move the cursor into the terminal on open.
+---@class BuildTerm.Terminal.Config:BuildTerm.Terminal.ShowConfig
 ---@field shell string? Specifies the shell command to execute. `nil` for default.
+---@field extmark_config BuildTerm.Terminal.ExtMarkConfigFun? Extmark config function.
+
+---@class BuildTerm.Terminal.ShowConfig
+---@field focus boolean? `true` to move the cursor into the terminal on open.
 ---@field window BuildTerm.Terminal.WindowConfig The window configuration.
 ---@field on_init fun()? Terminal window initialization hook function.
 ---@field on_focus fun()? Terminal window focus hook function.
----@field extmark_config BuildTerm.Terminal.ExtMarkConfigFun? Extmark config function.
 
 --------------------------------------------------------------------------------
 -- Public API
@@ -41,7 +43,6 @@ Terminal.__index = Terminal
 ---@return BuildTerm.Terminal
 function M.new(matcher, config)
 	local def_config = {
-		focus = false,
 		shell = nil,
 		-- Default window is 25% on the bottom.
 		window = function()
@@ -176,8 +177,8 @@ function Terminal:handle_output(first, last)
 end
 
 ---Opens the terminal split.
----@param config BuildTerm.Terminal.Config? Configuration overrides.
-function Terminal:open(config)
+---@param config BuildTerm.Terminal.ShowConfig? Configuration overrides.
+function Terminal:show(config)
 	config = vim.tbl_extend("force", self.config, config or {})
 
 	-- Create a buffer if we have none.
@@ -245,7 +246,7 @@ function Terminal:reset()
 	end
 
 	if open then
-		self:open({ focus = focus })
+		self:show({ focus = focus })
 	end
 end
 
@@ -260,10 +261,10 @@ function Terminal:is_focused()
 end
 
 ---Toggles between closed and opened terminal split.
----@param config BuildTerm.Terminal.Config? Configuration overrides.
+---@param config BuildTerm.Terminal.ShowConfig? Configuration overrides.
 function Terminal:toggle(config)
 	if not self:is_open() then
-		self:open(config)
+		self:show(config)
 	else
 		self:close()
 	end
@@ -273,7 +274,7 @@ end
 ---@param command string[]|string The commands to run.
 ---@param config BuildTerm.Terminal.Config? Configuration overrides.
 function Terminal:send(command, config)
-	self:open(config)
+	self:show(config)
 
 	if vim.api.nvim_buf_is_valid(self.buffer) then
 		local channel = vim.bo[self.buffer].channel
@@ -446,7 +447,7 @@ function Terminal:goto_match(match, config)
 
 			-- Update the cursor position.
 			if config.goto_source and location then
-				self:open()
+				self:show()
 				vim.api.nvim_win_set_cursor(self.window, { location[1] + 1, 0 })
 			end
 		end
