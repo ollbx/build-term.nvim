@@ -48,8 +48,18 @@ local function to_command(config)
 			return table.concat({ config, ... }, " ")
 		end
 	elseif type(config) == "table" then
-		return function()
-			return config
+		return function(...)
+			local lines = {}
+
+			for i, line in ipairs(config) do
+				if i == #config then
+					table.insert(lines, table.concat({ line, ... }, " "))
+				else
+					table.insert(lines, line)
+				end
+			end
+
+			return lines
 		end
 	elseif type(config) == "function" then
 		return config

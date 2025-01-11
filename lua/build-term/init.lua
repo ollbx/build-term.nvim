@@ -296,4 +296,12 @@ function M.build(...)
 	M.builder:build(...)
 end
 
+---Tests a match expression against the given line.
+---@param config BuildTerm.Matcher.Config The match config.
+---@param line string The line to match against.
+---@return BuildTerm.Match? The match or `nil`.
+function M.test_match(config, line)
+	return require("build-term.matcher").new(config):match({ line }, 1)
+end
+
 return M

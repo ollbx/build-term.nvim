@@ -1,104 +1,134 @@
 # Match groups
 
+_Match groups_ are groups of matchers that are used in a specific context. For example
+there could be a _match group_ `rust` that matches error and warning messages from the
+rust compiler, alongside other _match groups_ for other languages.
+
 ```lua
-opts = {
-  match = {
+match = {
     default = {
-      {
-        match = { [[\(error\|warning\|warn\|info\|debug\):\s*\(.*\)]], "type", "message" }
-      }
+        { [[\(error\|warning\|warn\|info\|debug\):\s*\(.*\)]], "type", "message" }
     },
     rust = {
-      {
-        lines = {
-          { [[\(error\|warning\).*:\s*\(.*\)]], "type", "message" },
-          { [[-->\s*\(.*\):\(\d\+\):\(\d\+\)]], "filename", "lnum", "col" }
-        },
-      }
+        {
+            { [[\(error\|warning\).*:\s*\(.*\)]], "type", "message" },
+            { [[-->\s*\(.*\):\(\d\+\):\(\d\+\)]], "file", "lnum", "col" },
+            priority = 1
+        }
     }
-  }
 }
 ```
 
-`opts.match` is a table of match groups. The special group `default` is selected by
-default. Any other group can be selected by:
+Each _match group_ is defined by a list of _matchers_, that are used to match either
+single lines or groups of consecutive lines. Each _matcher_ will produce a _match item_
+when it matches a line.
 
-- Calling `:BuildTerm select [group...]`
-- Calling `:BuildTerm select-ui`
-- Running a builder with the `select = ...` option.
+A _match item_ is used to capture additional information about the match, such as line
+numbers or filenames involved. The default field names used for this are:
 
-Each group consists of a list of matchers that are used to match terminal output.
+| name      | description |
+| --------- | ----------- |
+| `type`    | The type of the match (`error`, `warning`, `info`, `debug`, `hint`, ...) |
+| `message` | The message for the match. |
+| `file`    | The name of the file that triggered the error / warning etc. |
+| `lnum`    | The line number for the error. |
+| `col`     | The column number for the error. |
 
-## Matchers
+This is mostly by convention though and you can define and use your own fields as well.
+
+## Regular expressions
+
+The simplest matcher consists of a single regular expression:
 
 ```lua
-{ match = "something" }
-{ lines = { "something", match2, ... } }
+{ [[error: .*]] }
 ```
 
-A one-line matcher is specified by providing a value to the `match` key, whereas
-multi-line matchers use `lines = { match1, match2, ... }` to specify required matches
-on consecutive lines. Note that `match = x` is equal to `lines = { x }`.
+It will produce a _match item_ without any captured data and is pretty useless by itself.
+However it can be useful to match lines without data during multi-line matches.
 
-Matchers are evaluated against lines of output from the terminal and will produce
-a _match item_ on a successful match. A _match item_ stores information related to
-the match, such as the `message`, the line number `lnum` or the `type`.
+## Named groups
 
-### Match a regex without named groups
+You can capture data from the match, by specifying a match group in the regular expression
+and assigning a name to it. This is done by providing an additional string.
 
 ```lua
-"something"
-[[error: \(.*\)]]
+{ [[error: \(.*\)]], "message" }
 ```
 
-Specifying a `string` value will interpret the string as a regular expression.
-If the regular expression contains match groups, the text matched by the first match
-group will be used as the `message` of the resulting match item.
-
-*Note*: you can suppress this with a non-capturing group, such as: `[[error: \%\(.*\)]]`.
-
-### Match a regex with named groups
+This will create a field with the corresponding name in the _match item_. If you want to
+test this, you can simulate matching a line in the NeoVim command line:
 
 ```lua
-{ [[\(error\|warning\).*:\s*\(.*\)]], "type", "message" }
+lua =require("build-term").test_match({ [[error: \(.*\)]], "message" }, "error: test")
 ```
 
-By specifying a list of strings, you can assign names to multiple capture groups.
-The matched values are assigned to the match item and can be accessed in lua code using
-`item.data.[name]` (see `get_matches()`).
-
-*Note*: you can use non-capturing groups `\%\(...\)` if you need a group without a name.
-
-There are a few special names that you can match:
-
-| name       | description |
-| ---------- | ----------- |
-| `type`     | The type of the match (`error`, `warning`, `info`, `debug`, `hint`, ...) |
-| `message`  | The message for the match. |
-| `filename` | The name of the file that triggered the error / warning etc. |
-| `lnum`     | The line number for the error. |
-| `col`      | The column number for the error. |
-
-### Match using a lua function
-
-You can also match the line using an arbitrary lua function:
+The output should look similar to this:
 
 ```lua
-function(line)
-    return line:sub(1, 6) == "error:"
-end
+{
+    data = {
+        message = "test"
+    },
+    length = 1,
+    type = "hint"
+}
 ```
 
-If the function returns a `boolean` value, it will just create an empty match item,
-without any `message` or other metadata.
+## Match type
+
+Note that the _match type_ in the above example is `hint`, but it should be `error`. You
+can accomplish this in two ways. You can either directly specify the _match type_ like this:
 
 ```lua
-function(line)
+{ [[error: \(.*\)]], "message", type = "error" }
+```
+
+Or you can have the match produce a corresponding field (if the line contains the type):
+
+```lua
+{ [[\(error\): \(.*\)]], "type", "message" }
+```
+
+## Lua functions
+
+You can also use a Lua function, to match lines. For example:
+
+```lua
+{ function(line) return line:sub(1, 6) == "error:" end }
+```
+
+will match all lines that start with `"error:"`. If you want the match to return any
+data, the function can return a table:
+
+```lua
+{ function(line)
     if line:sub(1, 6) == "error:" then
         return { message = line:sub(7) }
     end
-end
+end }
 ```
 
-But you can also return a table with additional data, similar to the match groups
-with regular expressions.
+## Priority
+
+If you have multiple matchers that match on the same line, you can use `priority` to
+distinguish between them. For example:
+
+```lua
+{ [[error: \(.*\)]],       "message", type = "error", priority = 0 },
+{ [[fatal error: \(.*\)]], "message", type = "fatal", priority = 1 },
+```
+
+## Multi-line matches
+
+If you need to match multiple lines at once, you can specify multiple matchers like this:
+
+```lua
+{
+    { [[\(error\|warning\).*:\s*\(.*\)]], "type", "message" },
+    { [[-->\s*\(.*\):\(\d\+\):\(\d\+\)]], "file", "lnum", "col" },
+    priority = 1
+}
+```
+
+The results produced by all matchers are combined into a single _match item_.
