@@ -8,8 +8,7 @@
 ---@class BuildTerm.Matcher.Config
 ---@field type string? The type of the match.
 ---@field priority integer? The priority for the matcher.
----@field match BuildTerm.Matcher.LineConfig? Config for matching a single line.
----@field lines BuildTerm.Matcher.LineConfig[]? Config for matching a multiple lines.
+---@field [integer] BuildTerm.Matcher.LineConfig Line matchers.
 
 --------------------------------------------------------------------------------
 -- Private functions
@@ -19,23 +18,7 @@
 ---@param config BuildTerm.Matcher.LineConfig The match configuration.
 ---@return BuildTerm.Matcher.LineMatcher? A function for matching a single line.
 local function to_line_matcher(config)
-	if type(config) == "string" then
-		return function(line)
-			local match = vim.fn.matchlist(line, config)
-
-			-- If we have a capture group, only return data from that as the message.
-			if match[2] ~= nil and match[2] ~= "" then
-				return { message = match[2] }
-			end
-
-			-- Otherwise return an empty table.
-			if match[1] then
-				return true
-			end
-
-			return nil
-		end
-	elseif type(config) == "table" then
+	if type(config) == "table" then
 		return function(line)
 			local match = vim.fn.matchlist(line, config[1])
 			local result = {}
@@ -75,28 +58,26 @@ Matcher.__index = Matcher
 ---@param config BuildTerm.Matcher.Config The match configuration.
 ---@return BuildTerm.Matcher The matcher object.
 function M.new(config)
-	if config.lines and config.match then
-		error("Match config contains lines and also match option.")
-	end
-
-	if config.match then
-		config.lines = { config.match }
-	end
-
-	if not config.lines then
-		error("Match config without lines or match option.")
-	end
-
 	local matchers = {}
+	local ungrouped = {}
 
-	for _, line_config in ipairs(config.lines) do
-		local matcher = to_line_matcher(line_config)
-
-		if matcher then
-			table.insert(matchers, matcher)
+	for _, matcher_config in ipairs(config) do
+		-- Collect raw strings.
+		if type(matcher_config) == "string" then
+			table.insert(ungrouped, matcher_config)
 		else
-			error("Invalid match config: " .. vim.inspect(line_config))
+			local matcher = to_line_matcher(matcher_config)
+
+			if matcher then
+				table.insert(matchers, matcher)
+			else
+				error("Invalid match config: " .. vim.inspect(matcher_config))
+			end
 		end
+	end
+
+	if #ungrouped > 0 then
+		table.insert(matchers, 1, to_line_matcher(ungrouped))
 	end
 
 	local matcher = {

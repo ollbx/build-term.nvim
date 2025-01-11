@@ -1,7 +1,5 @@
 # Configuration
 
-## Settings overview
-
 ```lua
 opts = {
     -- The table of match groups.
@@ -14,6 +12,16 @@ opts = {
         -- The group "whatever" specified by a list of matchers.
         whatever = {
             {
+                -- Matcher line 1.
+                -- Note: the curly brackets can be omitted for the first line.
+                { [[error:\s*\(.*\)]], "message" },
+
+                -- Matcher line 2.
+                { [[in: \(.*\):\(\d+\)]], "file", "lnum" },
+
+                -- There could be more lines here.
+                -- ...
+
                 -- The type of the match. You can specify this, if the match
                 -- itself does not return a match type.
                 type = "error", -- error,err,warning,warn,info,debug,hint,...
@@ -21,20 +29,12 @@ opts = {
                 -- Can be set to resolve situations, where multiple matchers
                 -- will match on the same line.
                 priority = 0,
-
-                -- Specify either `match` or `lines`, not both.
-                -- For a single-line matcher.
-                match = {
-                    -- matcher
-                },
-
-                -- For a multi-line matcher.
-                lines = {
-                    -- matcher line 1
-                    -- matcher line 2
-                    -- ...
-                }
             },
+            {
+                -- Single-line match.
+                [[error:\s*\(.*\) in \(.*\)]], "message", "file",
+                priority = 1,
+            }
             -- ...
         }
     },
@@ -82,7 +82,7 @@ opts = {
         -- Allows customizing the navigation to the error file.
         -- _Warning_: setting this will override the default behavior.
         open = function(match)
-            -- Try to open `match.data.filename` in the current window.
+            -- Try to open `match.data.file` in the current window.
             -- This is intended to allow customizing the path searching mechanism.
             -- See `view.lua` for the default implementation.
             -- Return `true` on success.

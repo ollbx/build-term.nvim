@@ -16,7 +16,7 @@ View.__index = View
 function M.new(config)
 	local def_config = {
 		open = function(match)
-			local file = match.data.filename
+			local file = match.data.file
 
 			if not file then
 				return false
