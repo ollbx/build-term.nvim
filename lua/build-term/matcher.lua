@@ -80,6 +80,10 @@ function M.new(config)
 		table.insert(matchers, 1, to_line_matcher(ungrouped))
 	end
 
+	if #matchers == 0 then
+		error("Empty matcher: " .. vim.inspect(config))
+	end
+
 	local matcher = {
 		matchers = matchers,
 		priority = config.priority or 0,

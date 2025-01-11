@@ -12,7 +12,7 @@ describe("build-term.matcher", function()
 	}
 
 	it("should match a regex", function()
-		local matcher = Matcher.new({ match = ".o[ou]" })
+		local matcher = Matcher.new({ ".o[ou]" })
 
 		assert.is_truthy(matcher)
 		assert.are.same(1, matcher:get_context())
@@ -22,20 +22,9 @@ describe("build-term.matcher", function()
 		assert.are.same({ data = {}, length = 1, type = "hint" }, matcher:match(lines, 5))
 	end)
 
-	it("should match a regex with an unnamed group", function()
-		local matcher = Matcher.new({ match = [=[\(.\)o[ou]]=] })
-
-		assert.is_truthy(matcher)
-		assert.are.same(1, matcher:get_context())
-		assert.are.same({ data = { message = "w" }, length = 1, type = "hint" }, matcher:match(lines, 1))
-		assert.are.same({ data = { message = "f" }, length = 1, type = "hint" }, matcher:match(lines, 2))
-		assert.are.same(nil, matcher:match(lines, 3))
-		assert.are.same({ data = { message = "f" }, length = 1, type = "hint" }, matcher:match(lines, 5))
-	end)
-
 	it("should match a regex with named groups", function()
 		local matcher = Matcher.new({
-			match = { [=[\(.\)\(o[ou]\)]=], "head", "tail" }
+			[=[\(.\)\(o[ou]\)]=], "head", "tail"
 		})
 
 		assert.is_truthy(matcher)
@@ -48,7 +37,7 @@ describe("build-term.matcher", function()
 
 	it("should match a function returning a bool", function()
 		local matcher = Matcher.new({
-			match = function(line)
+			function(line)
 				return line:sub(1, 2) == "fo"
 			end
 		})
@@ -63,7 +52,7 @@ describe("build-term.matcher", function()
 
 	it("should match a function returning a table", function()
 		local matcher = Matcher.new({
-			match = function(line)
+			function(line)
 				if line:sub(1, 2) == "fo" then
 					return { tail = line:sub(2) }
 				end
@@ -80,10 +69,8 @@ describe("build-term.matcher", function()
 
 	it("should match multiple lines", function()
 		local matcher = Matcher.new({
-			lines = {
-				{ [=[\(.\)\(o[ou]\)]=], "head", "tail" },
-				function(line) if line == "bar" then return { type = "error" } end end,
-			}
+			{ [=[\(.\)\(o[ou]\)]=], "head", "tail" },
+			function(line) if line == "bar" then return { type = "error" } end end,
 		})
 
 		assert.is_truthy(matcher)
@@ -96,22 +83,13 @@ describe("build-term.matcher", function()
 	it("should fail on invalid type", function()
 		assert.has_error(function()
 			---@diagnostic disable-next-line: assign-type-mismatch
-			Matcher.new({ match = 5 })
+			Matcher.new({ 5 })
 		end)
 	end)
 
 	it("should fail without match config", function()
 		assert.has_error(function()
 			Matcher.new({})
-		end)
-	end)
-
-	it("should fail with ambiguous match config", function()
-		assert.has_error(function()
-			Matcher.new({
-				lines = { "" },
-				match = "",
-			})
 		end)
 	end)
 end)

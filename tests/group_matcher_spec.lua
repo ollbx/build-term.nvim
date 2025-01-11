@@ -4,12 +4,12 @@ local function new_matcher()
 
 	return GroupMatcher.new({
 		default = {
-			{ match = { [=[\(.\)\(o[ou]\)]=], "a", "b" } },
+			{ [=[\(.\)\(o[ou]\)]=], "a", "b" },
 		},
 		ext = {
-			{ match = function(line) return line:sub(1, 2) == "ba" end },
-			{ match = { [=[\(.\)\(o[ou]\)\(bar\)]=], "a", "b", "c" }, priority = 2 },
-			{ lines = { "qux", "fou" } },
+			{ function(line) return line:sub(1, 2) == "ba" end },
+			{ [=[\(.\)\(o[ou]\)\(bar\)]=], "a", "b", "c", priority = 2 },
+			{ { "qux" }, { "fou" } },
 		}
 	})
 end
