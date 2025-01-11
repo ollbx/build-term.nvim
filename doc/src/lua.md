@@ -23,7 +23,7 @@ local config = {
     -- `open()`.
     focus = true,
 
-    -- Overrides the corresponding setting in the from `opts.terminal`.
+    -- Overrides the corresponding setting in `opts.terminal`.
     window = ...,
     on_init = ...
     on_focus = ...,
