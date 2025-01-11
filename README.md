@@ -14,7 +14,7 @@ _Warning_: still in active development.
 - Build command auto-detection (based on files or custom lua function).
 - Multiple match configurations for different languages / build tools.
 
-## Lazy.nvim setup example
+## Setup example (for lazy.nvim)
 
 ```lua
 return {
@@ -30,7 +30,7 @@ return {
             rust = {
                 {
                     lines = {
-                        { [[\(error\|warning\).*:\s*\(.*\)]], "type", "message" },
+                        { [[\(error\|warning\)[^:]*:\s*\(.*\)]], "type", "message" },
                         { [[-->\s*\(.*\):\(\d\+\):\(\d\+\)]], "filename", "lnum", "col" }
                     },
                 }
@@ -66,6 +66,10 @@ return {
     }
 }
 ```
+
+## Documentation
+
+See the [extended documentation](https://ollbx.github.io/build-term.nvim/).
 
 ## Match groups
 
