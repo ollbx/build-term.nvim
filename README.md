@@ -20,9 +20,10 @@ _Warning_: still in active development.
 
 Check out the [documentation](https://ollbx.github.io/build-term.nvim/).
 
-# Planned features
+## TODO
 
 - [ ] Send the matched items to the quickfix list.
 - [ ] Navigate to item below the cursor.
 - [ ] Predefined commands / matchers for common languages?
-
+- [ ] Test it in Linux.
+- [ ] Test what happens to match items when the terminal is cleared...
