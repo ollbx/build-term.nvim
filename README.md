@@ -4,6 +4,8 @@ Toggleable terminal for neovim with error matching.
 
 _Warning_: still in active development.
 
+![](demo.webp)
+
 ## Features
 
 - Minimalistic and highly customizable.
