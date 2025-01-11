@@ -1,3 +1,5 @@
+[![Tests](https://github.com/ollbx/build-term.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/ollbx/build-term.nvim/actions/workflows/ci.yml)
+
 # build-term.nvim
 
 Toggleable terminal for neovim with error matching.
