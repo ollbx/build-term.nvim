@@ -1,5 +1,5 @@
 [book]
-authors = ["Olaf Liebe"]
+authors = ["ollb"]
 language = "en"
 multilingual = false
 src = "src"
@@ -7,3 +7,4 @@ title = "build-term.nvim"
 
 [output.html]
 preferred-dark-theme = "navy"
+git-repository-url = "https://github.com/ollbx/build-term.nvim"
