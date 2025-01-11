@@ -7,9 +7,7 @@
 
 ---@class BuildTerm.Matcher.Config
 ---@field type string? The type of the match.
----@field group string? The group for the matcher.
 ---@field priority integer? The priority for the matcher.
----@field mark_config vim.api.keyset.set_extmark? Extmark config override.
 ---@field match BuildTerm.Matcher.LineConfig? Config for matching a single line.
 ---@field lines BuildTerm.Matcher.LineConfig[]? Config for matching a multiple lines.
 
@@ -67,9 +65,7 @@ local M = {}
 
 ---@class BuildTerm.Matcher
 ---@field type? string The type of the match.
----@field group string The group that the matcher belongs to.
 ---@field priority integer The priority for the matcher.
----@field mark_config vim.api.keyset.set_extmark? Extmark config override.
 ---@field matchers BuildTerm.Matcher.LineMatcher[] The matchers for the individual lines.
 ---@field private __index any
 local Matcher = {}
@@ -105,9 +101,7 @@ function M.new(config)
 
 	local matcher = {
 		matchers = matchers,
-		group = config.group or "default",
 		priority = config.priority or 0,
-		mark_config = config.mark_config,
 		type = config.type,
 	}
 

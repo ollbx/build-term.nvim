@@ -4,3 +4,6 @@ language = "en"
 multilingual = false
 src = "src"
 title = "build-term.nvim"
+
+[output.html]
+preferred-dark-theme = "navy"
