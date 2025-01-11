@@ -1,3 +1,7 @@
 # Summary
 
-- [Chapter 1](./chapter_1.md)
+- [Installation](./installation.md)
+- [Configuration](./config.md)
+  - [Match](./config-match.md)
+  - [Build](./config-build.md)
+- [Usage](./usage.md)

@@ -5,6 +5,7 @@
 ---@alias BuildTerm.Terminal.WindowConfig vim.api.keyset.win_config|(fun(): vim.api.keyset.win_config)|nil
 ---@alias BuildTerm.Terminal.NotifyFun fun(index: integer?, total: integer?, match: BuildTerm.Match?)
 ---@alias BuildTerm.Terminal.FilterFun fun(match: BuildTerm.Match): boolean?
+---@alias BuildTerm.Terminal.ExtMarkConfigFun fun(BuildTerm.Match): vim.api.keyset.set_extmark
 
 ---@class BuildTerm.Terminal.Config
 ---@field focus boolean? `true` to move the cursor into the terminal on open.
@@ -12,6 +13,7 @@
 ---@field window BuildTerm.Terminal.WindowConfig The window configuration.
 ---@field on_init fun()? Terminal window initialization hook function.
 ---@field on_focus fun()? Terminal window focus hook function.
+---@field extmark_config BuildTerm.Terminal.ExtMarkConfigFun? Extmark config function.
 
 --------------------------------------------------------------------------------
 -- Public API
@@ -56,7 +58,9 @@ function M.new(matcher, config)
 		-- Default focus function enters insert mode.
 		on_focus = function()
 			vim.cmd.startinsert()
-		end
+		end,
+		-- Extmark config overrides.
+		extmark_config = nil,
 	}
 
 	if not matcher then
@@ -145,8 +149,9 @@ function Terminal:handle_output(first, last)
 
 		config.line_hl_group = config.sign_hl_group
 
-		if match.matcher.mark_config then
-			config = vim.tbl_extend("force", config, match.matcher.mark_config)
+		if self.config.extmark_config then
+			local overrides = self.config.extmark_config(match)
+			config = vim.tbl_extend("force", config, overrides)
 		end
 
 		match.mark = vim.api.nvim_buf_set_extmark(
