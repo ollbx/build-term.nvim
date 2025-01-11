@@ -42,11 +42,11 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Build with mdBook
         run: mdbook build
-        working-directory: ./book
+        working-directory: ./doc
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./book/book
+          path: ./doc/book
 
   # Deployment job
   deploy:
