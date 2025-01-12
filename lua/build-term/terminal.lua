@@ -14,7 +14,8 @@
 ---@class BuildTerm.Terminal.ShowConfig
 ---@field focus boolean? `true` to move the cursor into the terminal on open.
 ---@field window BuildTerm.Terminal.WindowConfig The window configuration.
----@field on_init fun()? Terminal window initialization hook function.
+---@field init_buffer fun()? Terminal buffer initialization hook function.
+---@field init_window fun()? Terminal window initialization hook function.
 ---@field on_focus fun()? Terminal window focus hook function.
 
 --------------------------------------------------------------------------------
@@ -51,8 +52,12 @@ function M.new(matcher, config)
 				height = math.floor(vim.o.lines / 4),
 			}
 		end,
+		-- Default init function sets up keymaps.
+		init_buffer = function(buffer)
+			vim.keymap.set("n", "<cr>", "<cmd>:BuildTerm goto<cr>", { buffer = buffer })
+		end,
 		-- Default init function disables line numbers.
-		on_init = function()
+		init_window = function()
 			vim.opt_local.nu = false
 			vim.opt_local.relativenumber = false
 		end,
@@ -201,7 +206,7 @@ function Terminal:show(config)
 		self.window = vim.api.nvim_open_win(self.buffer, true, win_config)
 
 		-- Initialize the window.
-		config.on_init()
+		config.init_window(self.window)
 
 		-- If the buffer is not a terminal yet, enter terminal mode.
 		if vim.bo[self.buffer].buftype ~= "terminal" then
@@ -212,6 +217,8 @@ function Terminal:show(config)
 					self:handle_output(first, last)
 				end
 			})
+
+			config.init_buffer(self.buffer)
 		end
 
 		if config.focus then
@@ -329,6 +336,12 @@ function Terminal:get_current()
 	return self.matches[self.cur_index]
 end
 
+---Returns the index of the currently selected match.
+---@return integer The currently selected index or 0 (if none is selected).
+function Terminal:get_current_index()
+	return self.cur_index
+end
+
 ---Returns the list of matches.
 ---@return BuildTerm.Match[] The list of matches.
 function Terminal:get_matches()
@@ -359,8 +372,7 @@ function Terminal:scan(config, dir)
 		end
 
 		if config.filter(self.matches[index]) then
-			self.cur_index = index
-			return self.matches[self.cur_index]
+			return self.matches[index]
 		end
 	end
 end
@@ -368,6 +380,50 @@ end
 ---Returns the current window ID.
 function Terminal:get_window()
 	return self.window
+end
+
+---Returns the match below the cursor in the terminal window.
+---@return BuildTerm.Match? # The match or `nil` if none was found.
+function Terminal:get_match_below_cursor()
+	local cursor = vim.api.nvim_win_get_cursor(self.window)
+
+	-- Cursor is (1,0)-based indexing, extmark (0,0)-based.
+	local row = cursor[1] - 1
+
+	local found = vim.api.nvim_buf_get_extmarks(
+		self.buffer,
+		self.namespace,
+		{ row, 0 },
+		{ row, 0 },
+		{ overlap = true })
+
+	if #found > 0 then
+		local mark = found[1][1]
+		local index = self.index[mark]
+
+		if index then
+			return self.matches[index]
+		else
+			return nil
+		end
+	else
+		return nil
+	end
+end
+
+---Navigates to the match below the cursor.
+---@param config BuildTerm.NavConfig? Navigation configuration options.
+---@return BuildTerm.Match? The found match or `nil`.
+function Terminal:goto_below_cursor(config)
+	local match = self:get_match_below_cursor()
+
+	if match then
+		-- We do not need to go to the source. We are already there.
+		config = vim.tbl_extend("force", config or {}, { goto_source = false })
+		self:goto_match(match, config)
+	end
+
+	return match
 end
 
 ---Navigates to the next match.
@@ -415,6 +471,7 @@ function Terminal:goto_match(match, config)
 
 		local index = self.index[match.mark]
 		config.notify(index, #self.matches, match)
+		self.cur_index = index
 
 		-- Retrieve the match position from the extmark.
 		local result = vim.api.nvim_buf_get_extmark_by_id(self.buffer, self.namespace, match.mark, { details = true })
