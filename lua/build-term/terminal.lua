@@ -6,9 +6,10 @@
 ---@alias BuildTerm.Terminal.NotifyFun fun(index: integer?, total: integer?, match: BuildTerm.Match?)
 ---@alias BuildTerm.Terminal.FilterFun fun(match: BuildTerm.Match): boolean?
 ---@alias BuildTerm.Terminal.ExtMarkConfigFun fun(BuildTerm.Match): vim.api.keyset.set_extmark
+---@alias BuildTerm.Terminal.ShellFun fun(): string?
 
 ---@class BuildTerm.Terminal.Config:BuildTerm.Terminal.ShowConfig
----@field shell string? Specifies the shell command to execute. `nil` for default.
+---@field shell (BuildTerm.Terminal.ShellFun|string)? Specifies the shell command to execute. `nil` for default.
 ---@field extmark_config BuildTerm.Terminal.ExtMarkConfigFun? Extmark config function.
 
 ---@class BuildTerm.Terminal.ShowConfig
@@ -215,7 +216,13 @@ function Terminal:show(config)
 
 		-- If the buffer is not a terminal yet, enter terminal mode.
 		if vim.bo[self.buffer].buftype ~= "terminal" then
-			vim.cmd.terminal(config.shell)
+			local shell = config.shell
+
+			if type(shell) == "function" then
+				shell = config.shell()
+			end
+
+			vim.cmd.terminal(shell)
 
 			vim.api.nvim_buf_attach(self.buffer, false, {
 				on_lines = function(_, _, _, first, last)
@@ -290,13 +297,18 @@ function Terminal:send(command, config)
 
 	if vim.api.nvim_buf_is_valid(self.buffer) then
 		local channel = vim.bo[self.buffer].channel
+		local newline = "\n"
+
+		if vim.fn.has("win64") or vim.fn.has("win32") then
+			newline = "\r\n"
+		end
 
 		if type(command) == "table" then
 			for _, line in ipairs(command) do
-				vim.fn.chansend(channel, line .. "\r\n")
+				vim.fn.chansend(channel, line .. newline)
 			end
 		else
-			vim.fn.chansend(channel, command .. "\r\n")
+			vim.fn.chansend(channel, command .. newline)
 		end
 
 		-- self.ve to the end of the buffer (so that it auto-scrolls).
