@@ -89,6 +89,7 @@ function M.setup(config)
 			"select-ui",
 			"build",
 			"quickfix",
+			"clear",
 		}
 	end
 
@@ -141,6 +142,8 @@ function M.setup(config)
 			M.build(unpack(args.fargs))
 		elseif cmd == "quickfix" then
 			M.send_to_quickfix()
+		elseif cmd == "clear" then
+			M.clear_matches()
 		else
 			vim.notify("Error: unrecognized command", vim.log.levels.ERROR)
 		end
