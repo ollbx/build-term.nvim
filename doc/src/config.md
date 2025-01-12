@@ -41,7 +41,8 @@ opts = {
 
     -- Configuration options related to the terminal window.
     terminal = {
-        -- The shell to run. Same as ":term [shell]".
+        -- The shell to run. Same as ":term [shell]". You can also specify a
+        -- function for example if you want to detect the OS.
         shell = nil,
 
         -- Overrides for the terminal window. Can be a table or a function.

@@ -124,7 +124,7 @@ function M.setup(config)
 		elseif cmd == "reset" then
 			M.reset()
 		elseif cmd == "send" then
-			M.send(string.sub(args.args, 5))
+			M.send(string.sub(args.args, 6))
 		elseif cmd == "next" then
 			table.remove(args.fargs, 1)
 			M.goto_next({ filter = make_filter(args.fargs) })
