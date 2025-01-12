@@ -13,6 +13,8 @@ _Warning_: still in active development.
 - Minimalistic and highly customizable.
 - Error matching using regular expressions or lua functions.
 - Support for matching multi-line error messages.
+- Navigation between matches across different files.
+- Matches can also be sent to the quickfix.
 - Build command auto-detection (based on files or custom lua function).
 - Multiple match configurations for different languages / build tools.
 
