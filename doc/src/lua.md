@@ -60,6 +60,29 @@ M.get_current()            -- Returns the currently selected match item.
 M.get_current_index()      -- Returns the index of the currently selected match item (0 if none).
 M.get_matches()            -- Returns a list of current match items.
 M.get_match_below_cursor() -- Returns the match item below the cursor or `nil` (if not found).
+M.send_to_quickfix(config) -- Sends the match list to the quickfix.
+```
+
+`config` in `send_to_quickfix` is either `nil` or a table:
+
+```lua
+local config = {
+    -- Lua function that converts match items to quickfix items.
+    convert = function(match)
+        -- See `:he setqflist` for the list of options.
+        return {
+            filename = match.data.file,
+            lnum = match.data.lnum,
+            -- ...
+        }
+    end,
+
+    -- Whether to open the quickfix afterwards.
+    open_quickfix = true,
+
+    -- Whether to close the terminal afterwards.
+    close_terminal = true,
+}
 ```
 
 You can navigate between matches using:
@@ -77,17 +100,17 @@ M.goto_below_cursor(config) -- Go to the match below the cursor.
 local config = {
     -- Can be used to filter match items by any function for the goto_next
     -- and goto_prev function.
-    filter = function(item)
-        return item.type == "error"
+    filter = function(match)
+        return match.type == "error"
     end,
 
     -- Can be used to customize the status message printed. The function is
     -- also called without arguments, when no more matches are available.
-    notify = function(index, total, item)
+    notify = function(index, total, match)
         if index then
-            vim.notify(item.data.message)
+            vim.notify(match.data.message)
         else
-            vim.notify("No item found", vim.log.levels.WARN)
+            vim.notify("No match found", vim.log.levels.WARN)
         end
     end,
 

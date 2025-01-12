@@ -88,6 +88,7 @@ function M.setup(config)
 			"select",
 			"select-ui",
 			"build",
+			"quickfix",
 		}
 	end
 
@@ -138,6 +139,8 @@ function M.setup(config)
 		elseif cmd == "build" then
 			table.remove(args.fargs, 1)
 			M.build(unpack(args.fargs))
+		elseif cmd == "quickfix" then
+			M.send_to_quickfix()
 		else
 			vim.notify("Error: unrecognized command", vim.log.levels.ERROR)
 		end
@@ -329,6 +332,12 @@ end
 ---Runs the first matching build command with the given args.
 function M.build(...)
 	M.builder:build(...)
+end
+
+---Sends the match list to the quickfix.
+---@param config BuildTerm.Terminal.QuickFixConfig? Configuration options.
+function M.send_to_quickfix(config)
+	M.terminal:send_to_quickfix(config)
 end
 
 ---Tests a match expression against the given line.
