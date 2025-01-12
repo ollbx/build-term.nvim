@@ -52,9 +52,14 @@ opts = {
             }
         end,
 
+        -- Hook function called when initializing the terminal buffer.
+        init_buffer = function(buffer)
+            vim.keymap.set("n", "<cr>", "<cmd>:BuildTerm goto<cr>", { buffer = buffer })
+        end,
+
         -- Hook function called when initializing the terminal window.
         -- The window is active, when the function is called.
-        on_init = function()
+        init_window = function(_window)
             vim.opt_local.nu = false
             vim.opt_local.relativenumber = false
         end,

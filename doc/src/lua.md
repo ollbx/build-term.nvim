@@ -25,7 +25,8 @@ local config = {
 
     -- Overrides the corresponding setting in `opts.terminal`.
     window = ...,
-    on_init = ...
+    init_buffer = ...,
+    init_window = ...,
     on_focus = ...,
 }
 ```
@@ -53,10 +54,12 @@ M.rebuild_matches()        -- Rescans the output for matches.
 ## Managing the list of matches
 
 ```lua
-M.clear_matches()       -- Clears the list of matches / selection / highlights etc.
-M.clear_selected_mark() -- Removes the highlight of the currently selected match.
-M.get_current()         -- Returns the currently selected match item.
-M.get_matches()         -- Returns a list of current match items.
+M.clear_matches()          -- Clears the list of matches / selection / highlights etc.
+M.clear_selected_mark()    -- Removes the highlight of the currently selected match.
+M.get_current()            -- Returns the currently selected match item.
+M.get_current_index()      -- Returns the index of the currently selected match item (0 if none).
+M.get_matches()            -- Returns a list of current match items.
+M.get_match_below_cursor() -- Returns the match item below the cursor or `nil` (if not found).
 ```
 
 You can navigate between matches using:
@@ -65,6 +68,7 @@ You can navigate between matches using:
 M.goto_next(config)         -- Go to the next match.
 M.goto_prev(config)         -- Go to the previous match.
 M.goto_match(match, config) -- Go to a specific match.
+M.goto_below_cursor(config) -- Go to the match below the cursor.
 ```
 
 `config` is either `nil` or a table:

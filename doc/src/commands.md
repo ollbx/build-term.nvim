@@ -14,6 +14,7 @@ The `:BuildTerm` command supports the following arguments:
 | `next [types]`    | Moves to the next _match item_ with the given _item type(s)_. |
 | `prev`            | Moves to the previous _match item_. |
 | `prev [types]`    | Moves to the previous _match item_ with the given _item type(s)_. |
+| `goto`            | Moves to the _match item_ under the cursor in the terminal window. |
 | `select`          | Selects the default _match group_. |
 | `select [groups]` | Selects the specified _match group(s)_. |
 | `select-ui`       | Uses `vim.ui.select` to ask for a _match group_ to select. |

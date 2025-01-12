@@ -77,8 +77,9 @@ function M.setup(config)
 	local complete = function()
 		return {
 			"toggle",
+			"show",
 			"open",
-			"focus",
+			"goto",
 			"close",
 			"reset",
 			"send",
@@ -115,6 +116,8 @@ function M.setup(config)
 			M.show()
 		elseif cmd == "open" then
 			M.open()
+		elseif cmd == "goto" then
+			M.goto_below_cursor()
 		elseif cmd == "close" then
 			M.close()
 		elseif cmd == "reset" then
@@ -204,6 +207,12 @@ function M.get_current()
 	return M.terminal:get_current()
 end
 
+---Returns the index of the currently selected match.
+---@return integer The currently selected index or 0 (if none is selected).
+function M.get_current_index()
+	return M.terminal:get_current_index()
+end
+
 ---Returns the list of matches.
 ---@return BuildTerm.Match[] The list of matches.
 function M.get_matches()
@@ -238,6 +247,21 @@ local function navigate(config, fun)
 	end
 
 	return match
+end
+
+---Returns the match below the cursor in the terminal window.
+---@return BuildTerm.Match? # The match or `nil` if none was found.
+function M.get_match_below_cursor()
+	return M.terminal:get_match_below_cursor()
+end
+
+---Navigates to the match below the cursor.
+---@param config BuildTerm.NavConfig? Navigation configuration options.
+---@return BuildTerm.Match? The found match or `nil`.
+function M.goto_below_cursor(config)
+	return navigate(config, function()
+		return M.terminal:goto_below_cursor(config)
+	end)
 end
 
 ---Navigates to the next match.
