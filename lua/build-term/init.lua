@@ -116,7 +116,7 @@ function M.setup(config)
 			M.toggle()
 		elseif cmd == "show" then
 			M.show()
-		elseif cmd == "open" then
+		elseif cmd == "open" or cmd == "focus" then
 			M.open()
 		elseif cmd == "goto" then
 			M.goto_below_cursor()
