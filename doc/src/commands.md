@@ -20,6 +20,7 @@ The `:BuildTerm` command supports the following arguments:
 | `select-ui`       | Uses `vim.ui.select` to ask for a _match group_ to select. |
 | `build`           | Triggers the default build action. |
 | `build [args]`    | Triggers the build action with additional arguments. |
+| `quickfix`        | Sends the match list to the quickfix. |
 
 This mostly corresponds to the [Lua interface](./lua.md).
 

@@ -18,6 +18,11 @@
 ---@field init_window fun()? Terminal window initialization hook function.
 ---@field on_focus fun()? Terminal window focus hook function.
 
+---@class BuildTerm.Terminal.QuickFixConfig
+---@field convert fun(BuildTerm.Match): table QuickFix item constructor.
+---@field open_quickfix boolean `true` to open the quickfix.
+---@field close_terminal boolean `true` to close the terminal.
+
 --------------------------------------------------------------------------------
 -- Public API
 --------------------------------------------------------------------------------
@@ -456,7 +461,7 @@ function Terminal:goto_match(match, config)
 				local message = item.data.message or ""
 				vim.notify("[" .. index .. "/" .. total .. "] " .. message)
 			else
-				vim.notify("No item found", vim.log.levels.WARN)
+				vim.notify("No match found", vim.log.levels.WARN)
 			end
 		end
 	}
@@ -510,6 +515,45 @@ function Terminal:goto_match(match, config)
 		end
 	else
 		config.notify()
+	end
+end
+
+---Sends the match list to the quickfix.
+---@param config BuildTerm.Terminal.QuickFixConfig? Configuration options.
+function Terminal:send_to_quickfix(config)
+	local def_config = {
+		convert = function(match)
+			return {
+				filename = match.data.file,
+				lnum = match.data.lnum,
+				col = match.data.col,
+				text = match.data.message,
+				type = string.sub(match.type, 1, 1),
+			}
+		end,
+		open_quickfix = true,
+		close_terminal = true,
+	}
+
+	config = vim.tbl_extend("force", def_config, config or {})
+	local items = {}
+
+	for _, match in ipairs(self.matches) do
+		local item = config.convert(match)
+
+		if item then
+			table.insert(items, item)
+		end
+	end
+
+	vim.fn.setqflist(items, ' ')
+
+	if config.open_quickfix then
+		vim.cmd.copen()
+	end
+
+	if config.close_terminal then
+		self:close()
 	end
 end
 
