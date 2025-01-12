@@ -299,7 +299,7 @@ function Terminal:send(command, config)
 		local channel = vim.bo[self.buffer].channel
 		local newline = "\n"
 
-		if vim.fn.has("win64") or vim.fn.has("win32") then
+		if vim.fn.has("win64") == 1 or vim.fn.has("win32") == 1 then
 			newline = "\r\n"
 		end
 
