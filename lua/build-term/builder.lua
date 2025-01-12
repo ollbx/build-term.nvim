@@ -1,8 +1,13 @@
 local M = {}
 
 ---@alias BuildTerm.Builder.CommandFun fun(...): string[]|string
----@alias BuildTerm.Builder.Config BuildTerm.Builder.CommandConfig[]
 ---@alias BuildTerm.Builder.TriggerFun fun(): boolean
+---@alias BuildTerm.Builder.PrepareFun fun(): boolean
+---
+---@class BuildTerm.Builder.Config
+---@field commands BuildTerm.Builder.CommandConfig[] The builder commands.
+---@field prepare BuildTerm.Builder.PrepareFun? Function called to prepare the build.
+---@field save_before_build boolean `true` to save all files before the build.
 ---
 ---@class BuildTerm.Builder.CommandConfig
 ---@field priority integer? The selection priority.
@@ -21,6 +26,7 @@ local M = {}
 ---@field command BuildTerm.Builder.CommandFun The command builder.
 
 ---@class BuildTerm.Builder
+---@field config BuildTerm.Builder.Config The build configuration.
 ---@field commands BuildTerm.Builder.Command[] The build commands.
 ---@field matcher BuildTerm.GroupMatcher The group matcher to use.
 ---@field terminal BuildTerm.Terminal The terminal to use.
@@ -85,9 +91,17 @@ end
 ---@param config BuildTerm.Builder.Config? The builder config to use.
 ---@return BuildTerm.Builder
 function M.new(matcher, terminal, config)
+	local def_config = {
+		commands = {},
+		prepare = nil,
+		save_before_build = false,
+	}
+
+	config = vim.tbl_extend("force", def_config, config or {})
+
 	local commands = {}
 
-	for _, build_config in ipairs(config or {}) do
+	for _, build_config in ipairs(config.commands) do
 		local trigger = to_trigger(build_config.trigger)
 		local command = to_command(build_config.command)
 		local select = to_list(build_config.select)
@@ -112,6 +126,7 @@ function M.new(matcher, terminal, config)
 	end)
 
 	local builder = {
+		config = config,
 		matcher = matcher,
 		commands = commands,
 		terminal = terminal,
@@ -126,6 +141,18 @@ end
 function Builder:build(...)
 	for _, builder in ipairs(self.commands) do
 		if builder.trigger() then
+			-- Save all files if requested.
+			if self.config.save_before_build then
+				vim.cmd("wa")
+			end
+
+			-- Run the prepare function.
+			if self.config.prepare then
+				if not self.config.prepare() then
+					return
+				end
+			end
+
 			-- Reset the terminal if requested.
 			if builder.reset then
 				self.terminal:reset()
