@@ -49,6 +49,7 @@ return {
         { "<leader>bd", "<cmd>BuildTerm build doc<cr>", desc = "Build docs" },
         { "<leader>bg", "<cmd>BuildTerm select-ui<cr>", desc = "Select match group" },
         { "<leader>bq", "<cmd>BuildTerm quickfix<cr>", desc = "Send to quickfix" },
+        { "<leader>bx", "<cmd>BuildTerm clear<cr>", desc = "Clears the list of matches" },
     }
 }
 ```
