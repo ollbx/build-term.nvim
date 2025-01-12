@@ -22,6 +22,8 @@ return {
             }
         },
         build = {
+            save_before_build = true,
+
             commands = {
                 {
                     select = "rust",
