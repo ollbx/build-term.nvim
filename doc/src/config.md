@@ -110,37 +110,47 @@ opts = {
     -- Configuration options for the `:BuildTerm build` command.
     -- This is a list of builders.
     build = {
-        {
-            -- The trigger filename or function.
-            trigger = "filename",
+        commands = {
+            {
+                -- The trigger filename or function.
+                trigger = "filename",
 
-            -- The command to send to the terminal to trigger the build.
-            -- Can also be a list of commands to send in sequence.
-            command = "make",
+                -- The command to send to the terminal to trigger the build.
+                -- Can also be a list of commands to send in sequence.
+                command = "make",
 
-            -- The match group to select before running the command. Can
-            -- also be a list to select multiple groups or `nil` to select
-            -- the default group.
-            select = "whatever",
+                -- The match group to select before running the command. Can
+                -- also be a list to select multiple groups or `nil` to select
+                -- the default group.
+                select = "whatever",
 
-            -- The priority of the builder, used to resolve conflicts between
-            -- multiple builders (for example if you have a `Makefile`, but
-            -- also a `Cargo.toml` file for Rust/cargo).
-            priority = 0,
+                -- The priority of the builder, used to resolve conflicts between
+                -- multiple builders (for example if you have a `Makefile`, but
+                -- also a `Cargo.toml` file for Rust/cargo).
+                priority = 0,
 
-            -- Whether to reset the terminal prior to building.
-            reset = true,
+                -- Whether to reset the terminal prior to building.
+                reset = true,
 
-            -- Whether to clear the list of matches prior to building. Note:
-            -- if you do not reset the terminal, but clear the match list, only
-            -- new output should produce matches. However this will currently
-            -- pick up matches from previous commands, due to how the output of
-            -- the terminal is scanned. That is a known issue.
-            clear = true,
+                -- Whether to clear the list of matches prior to building. Note:
+                -- if you do not reset the terminal, but clear the match list, only
+                -- new output should produce matches. However this will currently
+                -- pick up matches from previous commands, due to how the output of
+                -- the terminal is scanned. That is a known issue.
+                clear = true,
+            },
+
+            -- ...
         },
 
-        -- ...
-    }
+        -- Hook function that runs before every build.
+        prepare = function()
+            return true -- `true` to continue the build.
+        end,
+
+        -- True to issue :wa before every build.
+        save_before_build = false,
+    },
 
     -- Determines whether to rebuild / rescan the match list after selecting a
     -- different match group.

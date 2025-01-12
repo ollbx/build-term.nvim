@@ -22,16 +22,18 @@ return {
             }
         },
         build = {
-            {
-                select = "rust",
-                trigger = "Cargo.toml",
-                command = function(arg) return "cargo " .. (arg or "build") end,
-                priority = 2,
-            },
-            {
-                select = "default",
-                trigger = "Makefile",
-                command = "make",
+            commands = {
+                {
+                    select = "rust",
+                    trigger = "Cargo.toml",
+                    command = function(arg) return "cargo " .. (arg or "build") end,
+                    priority = 2,
+                },
+                {
+                    select = "default",
+                    trigger = "Makefile",
+                    command = "make",
+                }
             }
         }
     },
