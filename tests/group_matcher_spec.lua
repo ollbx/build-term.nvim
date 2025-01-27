@@ -30,14 +30,13 @@ describe("collect.match", function()
 		assert.are.same(1, matcher:get_context())
 
 		local result = matcher:scan(lines)
-		for _, match in ipairs(result) do match.matcher = nil end
-		table.sort(result, function(a, b) return a.offset < b.offset end)
+		for _, match in pairs(result) do match.matcher = nil end
 
 		assert.are.same(
 			{
-				{ data = { a = "f", b = "oo" }, offset = 2, length = 1, type = "hint" },
-				{ data = { a = "f", b = "oo" }, offset = 3, length = 1, type = "hint" },
-				{ data = { a = "f", b = "ou" }, offset = 6, length = 1, type = "hint" },
+				[2] = { data = { a = "f", b = "oo" }, length = 1, type = "hint" },
+				[3] = { data = { a = "f", b = "oo" }, length = 1, type = "hint" },
+				[6] = { data = { a = "f", b = "ou" }, length = 1, type = "hint" },
 			},
 			result
 		)
@@ -50,14 +49,13 @@ describe("collect.match", function()
 		assert.are.same(2, matcher:get_context())
 
 		local result = matcher:scan(lines)
-		for _, match in ipairs(result) do match.matcher = nil end
-		table.sort(result, function(a, b) return a.offset < b.offset end)
+		for _, match in pairs(result) do match.matcher = nil end
 
 		assert.are.same(
 			{
-				{ data = { a = "f", b = "oo", c = "bar" }, offset = 3, length = 1, type = "hint" },
-				{ data = {}, offset = 4, length = 1, type = "hint" },
-				{ data = {}, offset = 5, length = 2, type = "hint" },
+				[3] = { data = { a = "f", b = "oo", c = "bar" }, length = 1, type = "hint" },
+				[4] = { data = {}, length = 1, type = "hint" },
+				[5] = { data = {}, length = 2, type = "hint" },
 			},
 			result
 		)
@@ -70,17 +68,16 @@ describe("collect.match", function()
 		assert.are.same(2, matcher:get_context())
 
 		local result = matcher:scan(lines)
-		for _, match in ipairs(result) do match.matcher = nil end
-		table.sort(result, function(a, b) return a.offset < b.offset end)
+		for _, match in pairs(result) do match.matcher = nil end
 
 		assert.are.same(
 			{
-				{ data = { a = "f", b = "oo" }, offset = 2, length = 1, type = "hint" },
+				[2] = { data = { a = "f", b = "oo" }, length = 1, type = "hint" },
 				-- Note: priority 2 wins here.
-				{ data = { a = "f", b = "oo", c = "bar" }, offset = 3, length = 1, type = "hint" },
-				{ data = {}, offset = 4, length = 1, type = "hint" },
-				{ data = {}, offset = 5, length = 2, type = "hint" },
-				{ data = { a = "f", b = "ou" }, offset = 6, length = 1, type = "hint" },
+				[3] = { data = { a = "f", b = "oo", c = "bar" }, length = 1, type = "hint" },
+				[4] = { data = {}, length = 1, type = "hint" },
+				[5] = { data = {}, length = 2, type = "hint" },
+				[6] = { data = { a = "f", b = "ou" }, length = 1, type = "hint" },
 			},
 			result
 		)
