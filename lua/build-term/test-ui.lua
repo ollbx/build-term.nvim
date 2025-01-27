@@ -29,6 +29,7 @@ function M.open()
 			"- tn: go to the next match",
 			"- tp: go to the previous match",
 			"- tl: go to the last match",
+			"- tx: reset the item selection",
 			"",
 			"error: This is a test error line.",
 			"file: some_testfile.txt:123",
@@ -140,19 +141,16 @@ function M.open()
 		local function load_config()
 			local lines = vim.api.nvim_buf_get_lines(M.config_buf, 0, -1, false)
 
-			local prefix = [[
+			local code = [[
 				require("build-term.test-ui").tracker:define_groups(
 					require("build-term.scanner").parse_groups(
 						(function()
-			]]
-
-			local suffix = [[
+			]] .. table.concat(lines, "\n") .. [[
 						end)()
 					)
 				)
 			]]
 
-			local code = prefix .. table.concat(lines, "\n") .. suffix
 			vim.fn.luaeval(code)
 		end
 
@@ -180,6 +178,7 @@ function M.open()
 		vim.keymap.set("n", "tn", function() M.tracker:next() end, { buffer = M.scratch_buf })
 		vim.keymap.set("n", "tp", function() M.tracker:prev() end, { buffer = M.scratch_buf })
 		vim.keymap.set("n", "tl", function() M.tracker:last() end, { buffer = M.scratch_buf })
+		vim.keymap.set("n", "tx", function() M.tracker:unselect() end, { buffer = M.scratch_buf })
 	end
 end
 
