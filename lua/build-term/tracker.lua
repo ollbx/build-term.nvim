@@ -17,7 +17,8 @@ local UPDATE_TIMEOUT = 25
 ---@field matches [BuildTerm.Match]? The cached list of matches.
 ---@field visible_matches [BuildTerm.Match] The list of visible matches.
 ---@field scheduled boolean `true` if an update has been scheduled.
----@field last_update integer The timestamp of the last update.
+---@field update_time integer The timestamp of the last update.
+---@field update_timer uv.uv_timer_t? The update timer ID.
 ---@field current integer The currently selected index.
 ---@field hooks BuildTerm.Tracker.Hooks Hook functions.
 local Tracker = {}
@@ -34,7 +35,8 @@ function M.new()
 		matches = nil,
 		visible_matches = {},
 		scheduled = false,
-		last_update = vim.uv.now(),
+		update_time = vim.uv.now(),
+		update_timer = nil,
 		current = 0,
 		hooks = {
 			update = function() end,
@@ -65,7 +67,7 @@ end
 ---@param groups { string: [BuildTerm.Scanner] } The match groups.
 function Tracker:define_groups(groups)
 	self.groups = groups
-	self:schedule_update()
+	self:schedule_update(true)
 end
 
 ---Updates a specific match group.
@@ -73,7 +75,7 @@ end
 ---@param group [BuildTerm.Scanner] The match group.
 function Tracker:define_group(name, group)
 	self.groups[name] = group
-	self:schedule_update()
+	self:schedule_update(true)
 end
 
 ---Returns the groups configured in the tracker.
@@ -112,7 +114,7 @@ function Tracker:set_group(name, global)
 		end
 	end
 
-	self:schedule_update()
+	self:schedule_update(true)
 end
 
 ---Attaches the tracker to the given buffer.
@@ -149,7 +151,7 @@ function Tracker:attach(buffer)
 			end,
 		})
 
-		ui:schedule_update()
+		ui:schedule_update(true)
 		ui.matches = nil
 	end
 end
@@ -163,25 +165,36 @@ function Tracker:detach(buffer)
 
 	if self.buffers[buffer] then
 		self.buffers[buffer] = nil
-		self:schedule_update()
+		self:schedule_update(true)
 	end
 end
 
 ---Schedules an UI update to run in the near future.
-function Tracker:schedule_update()
+---@param now boolean? Specify `true` to force an update as soon as possible.
+function Tracker:schedule_update(now)
+	-- If we do a forced update and one is scheduled, kill the scheduled update.
+	if now and self.scheduled then
+		self.update_timer:close()
+		self.update_timer = nil
+		self.scheduled = false
+	end
+
 	-- This will limit the amount of updates to only one update per `update_timeout`.
 	if not self.scheduled then
 		local ui = self
 		self.scheduled = true
 
-		local now = vim.uv.now()
-		local elapsed = now - self.last_update
+		local elapsed = vim.uv.now() - self.update_time
 		local wait = UPDATE_TIMEOUT - math.min(elapsed, UPDATE_TIMEOUT)
 
-		vim.defer_fn(function()
+		if now then
+			wait = 0
+		end
+
+		self.update_timer = vim.defer_fn(function()
 			ui:update()
 			ui.scheduled = false
-			ui.last_update = now
+			ui.update_time = vim.uv.now()
 		end, wait)
 	end
 end
@@ -251,8 +264,13 @@ function Tracker:update()
 		for _, scanner in ipairs(scanners) do
 			local matches = scanner:scan(window.bufnr, first, last)
 
-			for _, match in ipairs(matches) do
+			for i, match in ipairs(matches) do
 				local type = match.data["type"] or "hint"
+				local line_highlight = highlight[type]
+
+				if i == self.current then
+					line_highlight = "Visual"
+				end
 
 				-- Create extmarks.
 				vim.api.nvim_buf_set_extmark(window.bufnr, self.namespace, match.lnum - 1, 0, {
@@ -261,7 +279,7 @@ function Tracker:update()
 					hl_mode = "combine",
 					sign_text = string.upper(string.sub(type, 1, 1)),
 					sign_hl_group = highlight[type],
-					line_hl_group = highlight[type],
+					line_hl_group = line_highlight,
 				})
 
 				table.insert(self.visible_matches, match)
@@ -340,6 +358,8 @@ function Tracker:goto_match(match, focus)
 			end
 		end
 	end
+
+	self:schedule_update(true)
 end
 
 ---Moves the current item back or forward.
@@ -397,6 +417,12 @@ function Tracker:last(focus)
 	else
 		vim.notify("No matches found")
 	end
+end
+
+---Resets the current item selection.
+function Tracker:unselect()
+	self.current = 0
+	self:schedule_update(true)
 end
 
 ---Sets the update hook function.
