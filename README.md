@@ -24,4 +24,8 @@ Check out the [documentation](https://ollbx.github.io/build-term.nvim/).
 
 ## TODO
 
+- [ ] Implement current item highlight + notifications with new matching.
+- [ ] Switch terminal to use the new matching mechanism.
+- [ ] Fix type definitions.
+- [ ] Disable / ignore old matches?
 - [ ] Predefined commands / matchers for common languages?
