@@ -45,8 +45,10 @@ end
 --------------------------------------------------------------------------------
 
 local M = {}
+M.next_id = 0
 
 ---@class BuildTerm.Matcher
+---@field id integer The ID of the matcher.
 ---@field type? string The type of the match.
 ---@field priority integer The priority for the matcher.
 ---@field matchers BuildTerm.Matcher.LineMatcher[] The matchers for the individual lines.
@@ -84,7 +86,11 @@ function M.new(config)
 		error("Empty matcher: " .. vim.inspect(config))
 	end
 
+	local id = M.next_id
+	M.next_id = M.next_id + 1
+
 	local matcher = {
+		id = id,
 		matchers = matchers,
 		priority = config.priority or 0,
 		type = config.type,

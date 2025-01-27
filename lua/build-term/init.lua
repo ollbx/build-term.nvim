@@ -31,13 +31,14 @@
 ---@field goto_source boolean? `true` to navigate to the match source.
 ---@field goto_target boolean? `true` to navigate to the match target.
 
+---@alias BuildTerm.MatchData { string: string }
+
 ---@class BuildTerm.Match
 ---@field matcher BuildTerm.Matcher? The matcher that produced the result.
----@field offset integer? The match offset.
 ---@field length integer The length of the match.
 ---@field mark integer? The extmark ID in the terminal buffer.
 ---@field type string The type of the match.
----@field data { string: string } The match data.
+---@field data BuildTerm.MatchData The match data.
 
 local M = {}
 

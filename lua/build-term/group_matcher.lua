@@ -7,7 +7,7 @@ local M = {}
 ---@alias BuildTerm.GroupMatcher.Config { string: BuildTerm.Matcher.Config[] }
 
 ---@class BuildTerm.GroupMatcher
----@field groups { string: BuildTerm.Matcher.Config } The group matcher configurations.
+---@field groups { string: BuildTerm.Matcher } The group matcher configurations.
 ---@field enabled { string: boolean } The enabled groups.
 ---@field private __index any
 local GroupMatcher = {}
@@ -97,10 +97,9 @@ end
 
 ---Scans the given lines for matches using all matchers of the current group.
 ---@param lines string[] The lines to scan.
----@return BuildTerm.Match[] # A list of matches.
+---@return { integer: BuildTerm.Match } # A list of matches by offset.
 function GroupMatcher:scan(lines)
 	local matches = {}
-	local index = {}
 
 	for i = 1, #lines do
 		for group, _ in pairs(self.enabled) do
@@ -111,16 +110,13 @@ function GroupMatcher:scan(lines)
 
 				if match then
 					match.matcher = matcher
-					match.offset = i
 
-					if index[i] == nil then
+					if matches[i] == nil then
 						-- Append the match at the end.
-						index[i] = match
-						table.insert(matches, match)
-					elseif matcher.priority >= index[i].matcher.priority then
+						matches[i] = match
+					elseif matcher.priority >= matches[i].matcher.priority then
 						-- Replace the last match, if the new one has higher priority.
-						index[i] = match
-						matches[#matches] = match
+						matches[i] = match
 					end
 				end
 			end

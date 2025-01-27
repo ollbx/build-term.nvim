@@ -34,8 +34,7 @@ local M = {}
 ---@field buffer integer The terminal buffer (or -1 if uninitialized).
 ---@field window integer The terminal window (or -1 if hidden).
 ---@field matcher BuildTerm.GroupMatcher The group matcher to use.
----@field matches BuildTerm.Match[] The list of matches.
----@field index { integer: integer } Reverse lookup index.
+---@field matches { integer: BuildTerm.Match } The list of matches (by mark ID).
 ---@field cur_index integer The currently selected match.
 ---@field cur_mark integer The mark for the currently selected match.
 ---@field namespace integer The extmark namespace used.
@@ -85,7 +84,6 @@ function M.new(matcher, config)
 		window = -1,
 		matcher = matcher,
 		matches = {},
-		index = {},
 		cur_index = 0,
 		cur_mark = -1,
 		namespace = vim.api.nvim_create_namespace(""),
@@ -96,65 +94,158 @@ function M.new(matcher, config)
 	return terminal
 end
 
----Handles new output on the terminal buffer.
----@private
-function Terminal:handle_output(first, last)
+---Gets all currently known matches.
+---@return { integer: BuildTerm.Match } The list of matches (by offset).
+function Terminal:get_matches()
+	local matches = {}
+	self:visit_range(0, -1, function(match) table.insert(matches, match) end)
+	return matches
+end
+
+---Gets all currently known matches in the given line range in order.
+---_Note_: multi-line matches are set to the first line they match at.
+---@param first integer The first line to scan (0-based index).
+---@param last integer The last line to scan (0-based index).
+---@param visit fun(match: BuildTerm.Match, row: integer) The visitor function.
+function Terminal:visit_range(first, last, visit)
 	if not vim.api.nvim_buf_is_valid(self.buffer) then
-		return
+		return {}
 	end
 
-	-- Extend the area by the context required.
-	local context = self.matcher:get_context()
-	first = math.max(0, first - context)
+	local matches = {}
 
-	if last < 0 then
-		last = -1
-	else
+	-- Find all existing matches that overlap the changed area.
+	local old_marks = vim.api.nvim_buf_get_extmarks(
+		self.buffer,
+		self.namespace,
+		{ first, 0 },
+		{ last, 0 },
+		{})
+
+	for _, mark in ipairs(old_marks) do
+		if mark ~= self.cur_mark then
+			local mark_id = mark[1]
+			local row = mark[2]
+			local match = self.matches[mark_id]
+
+			if match then
+				visit(match, row)
+			else
+				vim.api.nvim_buf_del_extmark(self.buffer, self.namespace, mark_id)
+				self.matches[mark_id] = nil
+			end
+		end
+	end
+
+	return matches
+end
+
+---Gets all currently known matches in the given line range as a map.
+---_Note_: multi-line matches are set to the first line they match at.
+---@param first integer The first line to scan (0-based index).
+---@param last integer The last line to scan (0-based index).
+---@return { integer: BuildTerm.Match } # The matches (by row).
+function Terminal:visit_range_as_map(first, last)
+	local matches = {}
+	self:visit_range(first, last, function(match, row) matches[row] = match end)
+	return matches
+end
+
+---Scans for matches in the given line range in order.
+---_Note_: multi-line matches are set to the first line they match at.
+---@param first integer The first line to scan (0-based index).
+---@param last integer The last line to scan (0-based index).
+---@param visit fun(match: BuildTerm.Match, row: integer) The visitor function.
+function Terminal:scan_range(first, last, visit)
+	if not vim.api.nvim_buf_is_valid(self.buffer) then
+		return {}
+	end
+
+	-- Extend the line end to find multi-line matches.
+	local context = self.matcher:get_context()
+
+	if first < 0 then
+		first = 0
+	end
+
+	if last >= 0 then
 		last = last + context
 	end
 
 	-- Retrieve the changed lines and match on them.
 	local lines = vim.api.nvim_buf_get_lines(self.buffer, first, last, false)
-	local matches = self.matcher:scan(lines)
 
-	for _, match in ipairs(matches) do
-		-- 0-based index.
-		local offset = first + match.offset - 1
+	for rel_offset, match in pairs(self.matcher:scan(lines)) do
+		local row = first + rel_offset - 1
 
-		-- Search for existing extmarks that overlap our line.
-		local found = vim.api.nvim_buf_get_extmarks(
-			self.buffer,
-			self.namespace,
-			{ offset, 0 },
-			{ offset, 0 },
-			{ overlap = true })
-
-		local old_mark = nil
-
-		-- If there was a previous ID, update the existing entry.
-		if #found > 0 then
-			old_mark = found[1][1]
+		if row >= first and (row <= last or last < 0) then
+			visit(match, row)
 		end
+	end
+end
+
+---Scans for matches in the given line range as a map.
+---_Note_: multi-line matches are set to the first line they match at.
+---@param first integer The first line to scan (0-based index).
+---@param last integer The last line to scan (0-based index).
+---@return { integer: BuildTerm.Match } # The matches (by row).
+function Terminal:scan_range_as_map(first, last)
+	local matches = {}
+	self:scan_range(first, last, function(match, row) matches[row] = match end)
+	return matches
+end
+
+---Handles new output on the terminal buffer.
+---@param first integer The first line to scan (0-based index).
+---@param last integer The last line to scan (0-based index).
+function Terminal:rescan_lines(first, last)
+	if not vim.api.nvim_buf_is_valid(self.buffer) then
+		return
+	end
+
+	vim.print("rescan " .. first .. " " .. last)
+
+	-- Extened the scan area so that it can include multi-line matches that start
+	-- before `first`, but that that may still be affected.
+	local context = self.matcher:get_context()
+	first = math.max(0, first - context)
+
+	-- Get the known matches in the area and then rescan the area for new matches.
+	local old_matches = self:visit_range_as_map(first, last)
+	local new_matches = self:scan_range_as_map(first, last)
+
+	-- Find old matches that are no longer in the area and remove them.
+	for offset, old_match in pairs(old_matches) do
+		local new_match = new_matches[offset]
+
+		if not new_match then
+			vim.api.nvim_buf_del_extmark(self.buffer, self.namespace, old_match.mark)
+			self.matches[old_match.mark] = nil
+		end
+	end
+
+	-- Find new or updated matches.
+	for offset, new_match in pairs(new_matches) do
+		local old_match = old_matches[offset]
 
 		local config = {
-			id = old_mark,
-			end_row = offset + match.length - 1,
+			end_row = offset + new_match.length - 1,
 			hl_eol = true,
 			sign_text = "H",
 			sign_hl_group = "DiagnosticSignHint",
 			hl_mode = "combine",
 		}
 
-		if match.type == "err" or match.type == "error" then
+		if new_match.type == "err" or new_match.type == "error" then
 			config.sign_text = "E"
 			config.sign_hl_group = "DiagnosticSignError"
-		elseif match.type == "warn" or match.type == "warning" then
+		elseif new_match.type == "warn" or new_match.type == "warning" then
 			config.sign_text = "W"
 			config.sign_hl_group = "DiagnosticSignWarn"
-		elseif match.type == "info" then
+		elseif new_match.type == "info" then
 			config.sign_text = "I"
 			config.sign_hl_group = "DiagnosticSignInfo"
-		elseif match.type == "debug" then
+		elseif new_match.type == "debug" then
 			config.sign_text = "D"
 			config.sign_hl_group = "DiagnosticSignInfo"
 		end
@@ -166,24 +257,21 @@ function Terminal:handle_output(first, last)
 			config = vim.tbl_extend("force", config, overrides)
 		end
 
-		match.mark = vim.api.nvim_buf_set_extmark(
+		-- If there is an old match at the offset, we replace it.
+		if old_match then
+			config.id = old_match.mark
+			self.matches[old_match.mark] = nil
+		end
+
+		-- Create the new mark / update the existing one.
+		new_match.mark = vim.api.nvim_buf_set_extmark(
 			self.buffer,
 			self.namespace,
 			offset,
 			0,
 			config)
 
-		if old_mark then
-			-- Replace the previous match.
-			local index = self.index[old_mark]
-
-			if index then
-				self.matches[index] = match
-			end
-		else
-			table.insert(self.matches, match)
-			self.index[match.mark] = #self.matches
-		end
+		self.matches[new_match.mark] = new_match
 	end
 end
 
@@ -226,7 +314,7 @@ function Terminal:show(config)
 
 			vim.api.nvim_buf_attach(self.buffer, false, {
 				on_lines = function(_, _, _, first, last)
-					self:handle_output(first, last)
+					self:rescan_lines(first, last)
 				end
 			})
 
@@ -324,7 +412,7 @@ end
 ---Rebuilds the list of matches with the selected groups.
 function Terminal:rebuild_matches()
 	self:clear_matches()
-	self:handle_output(0, -1)
+	self:rescan_lines(0, -1)
 end
 
 ---Clears the list of matched items.
@@ -332,7 +420,6 @@ function Terminal:clear_matches()
 	self.cur_index = 0
 	self.cur_mark = -1
 	self.matches = {}
-	self.index = {}
 
 	if vim.api.nvim_buf_is_valid(self.buffer) then
 		vim.api.nvim_buf_clear_namespace(self.buffer, self.namespace, 0, -1)
@@ -357,12 +444,6 @@ end
 ---@return integer The currently selected index or 0 (if none is selected).
 function Terminal:get_current_index()
 	return self.cur_index
-end
-
----Returns the list of matches.
----@return BuildTerm.Match[] The list of matches.
-function Terminal:get_matches()
-	return self.matches
 end
 
 ---Scans the match list in the given direction.
