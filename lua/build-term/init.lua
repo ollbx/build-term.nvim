@@ -57,8 +57,13 @@ function M.setup(config)
 			first = match_commands.first,
 			last = match_commands.last,
 			cancel = match_commands.cancel,
-			select = match_commands.select,
-			lselect = match_commands.lselect,
+			select = function(args)
+				local buffer = M._terminal:get_buffer()
+
+				if vim.api.nvim_buf_is_valid(buffer) then
+					match_commands.select(args, buffer)
+				end
+			end,
 			quickfix = match_commands.quickfix,
 		})
 	end
