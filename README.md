@@ -4,7 +4,7 @@ Toggleable terminal for neovim with error matching.
 
 _Warning_: still in active development.
 
-[demo.webm](https://github.com/user-attachments/assets/2d68a464-ccbc-45d5-a074-a98a4c57fa16)
+[demo.webm](https://github.com/user-attachments/assets/09b98eab-0a23-416b-9457-f4fb12d2731e)
 
 ## Features
 
