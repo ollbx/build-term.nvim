@@ -24,11 +24,11 @@ It also re-exports some of the `:MatchList` commands for consistency:
 | `next [types]`    | Navigates to the next match item with any of the given types. |
 | `prev`            | Navigates to the previous match item. |
 | `prev [types]`    | Navigates to the previous match item with any of the given types. |
-| `unselect`        | Resets the current item selection. |
-| `group`           | Shows the match groups using `vim.ui.select`. Enter switches the global match group. |
-| `lgroup`          | Shows the match groups using `vim.ui.select`. Enter switches the (buffer-)local match group. |
-| `group [names]`   | Sets the global match group(s) to the given group(s). |
-| `lgroup [names]`  | Sets the (buffer-)local match group(s) to the given group(s). |
+| `cancel`          | Cancels the current item selection. |
+| `select`          | Shows the match groups using `vim.ui.select`. Enter switches the global match group. |
+| `select [names]`  | Sets the global match group(s) to the given group(s). |
+| `lselect`         | Shows the match groups using `vim.ui.select`. Enter switches the (buffer-)local match group. |
+| `lselect [names]` | Sets the (buffer-)local match group(s) to the given group(s). |
 | `quickfix`        | Sends the matched items to the quickfix list. |
 
 You have more control over the behavior of those commands, by using the

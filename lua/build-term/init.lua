@@ -56,9 +56,9 @@ function M.setup(config)
 			prev = match_commands.prev,
 			first = match_commands.first,
 			last = match_commands.last,
-			unselect = match_commands.unselect,
-			group = match_commands.group,
-			lgroup = match_commands.lgroup,
+			cancel = match_commands.cancel,
+			select = match_commands.select,
+			lselect = match_commands.lselect,
 			quickfix = match_commands.quickfix,
 		})
 	end
