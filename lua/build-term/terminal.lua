@@ -83,6 +83,8 @@ function Terminal:show(config)
 		self._buffer = vim.api.nvim_create_buf(false, true)
 	end
 
+	local prev_win = vim.api.nvim_get_current_win()
+
 	-- Create the window if it is invalid.
 	if not vim.api.nvim_win_is_valid(self._window) then
 		local win_config = config.window
@@ -92,7 +94,6 @@ function Terminal:show(config)
 		end
 
 		-- Create the window and switch to it.
-		local prev_win = vim.api.nvim_get_current_win()
 		win_config.win = -1
 		self._window = vim.api.nvim_open_win(self._buffer, true, win_config)
 
@@ -111,25 +112,22 @@ function Terminal:show(config)
 
 			config.init_buffer(self._buffer)
 		end
+	end
 
-		if config.focus then
-			config.on_focus()
-		else
-			vim.api.nvim_set_current_win(prev_win)
-		end
-	elseif config.focus then
-		local old_win = vim.api.nvim_get_current_win()
-		local ok, MatchList = pcall(require, "match-list")
+	if config.focus then
+		if self._window ~= prev_win then
+			local ok, MatchList = pcall(require, "match-list")
 
-		if ok then
-			-- Set the window we moved from as the file window.
-			MatchList.set_file_window(old_win)
-		end
+			if ok then
+				-- Set the window we moved from as the file window.
+				MatchList.set_file_window(prev_win)
+			end
 
-		if self._window ~= old_win then
 			vim.api.nvim_set_current_win(self._window)
 			config.on_focus()
 		end
+	else
+		vim.api.nvim_set_current_win(prev_win)
 	end
 end
 
