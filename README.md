@@ -1,7 +1,5 @@
 # build-term.nvim
 
-[![Tests](https://github.com/ollbx/build-term.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/ollbx/build-term.nvim/actions/workflows/ci.yml) [![Docs](https://github.com/ollbx/build-term.nvim/actions/workflows/mdbook.yml/badge.svg)](https://ollbx.github.io/build-term.nvim/)
-
 Toggleable terminal for neovim with error matching.
 
 _Warning_: still in active development.
@@ -20,12 +18,8 @@ _Warning_: still in active development.
 
 ## Documentation
 
-Check out the [documentation](https://ollbx.github.io/build-term.nvim/).
+See [installation](doc/01-installation.md) to get started.
 
 ## TODO
 
-- [ ] Implement current item highlight + notifications with new matching.
-- [ ] Switch terminal to use the new matching mechanism.
-- [ ] Fix type definitions.
-- [ ] Disable / ignore old matches?
 - [ ] Predefined commands / matchers for common languages?
