@@ -61,7 +61,11 @@ function M.setup(config)
 				local buffer = M._terminal:get_buffer()
 
 				if vim.api.nvim_buf_is_valid(buffer) then
-					match_commands.select(args, buffer)
+					if #args == 0 then
+						MatchList.select_group(buffer)
+					else
+						MatchList.set_group(args, buffer)
+					end
 				end
 			end,
 			quickfix = match_commands.quickfix,
