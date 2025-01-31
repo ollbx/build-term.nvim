@@ -40,6 +40,23 @@ function M.setup(config)
 		build = function(args) M.build(unpack(args)) end,
 	}
 
+	local match_ok, MatchList = pcall(require, "match-list")
+
+	if match_ok then
+		-- Re-export commands from match-list.
+		commands = vim.tbl_extend("force", commands, {
+			["goto"] = MatchList.goto,
+			next = MatchList.next,
+			prev = MatchList.prev,
+			first = MatchList.first,
+			last = MatchList.last,
+			unselect = MatchList.unselect,
+			group = MatchList.group,
+			lgroup = MatchList.lgroup,
+			quickfix = MatchList.quickfix,
+		})
+	end
+
 	local command = function(args)
 		if #args.fargs == 0 then
 			M.open()
