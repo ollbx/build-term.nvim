@@ -6,7 +6,7 @@ on the make- or config files found in the current working directory.
 ```lua
 build = {
     {
-        select = "rust",
+        match = "rust",
         trigger = "Cargo.toml",
         command = function(arg) return "cargo " .. (arg or "build") end,
         priority = 1,
@@ -71,17 +71,17 @@ end
 ## Match group
 
 If you want to switch to a specific match group before running the build, you can provide
-the `select` option to do so:
+the `match` option to do so:
 
 ```lua
-select = "rust",
+match = "rust",
 command = function(arg) return "cargo " .. (arg or "build") end,
 ```
 
 You can also provide multiple match groups:
 
 ```lua
-select = { "rust", "cargo" }
+match = { "rust", "cargo" }
 ```
 
 ## Priority
@@ -89,17 +89,14 @@ select = { "rust", "cargo" }
 Sometimes you have projects with multiple build files. For example a rust project could
 have a `Cargo.toml` file and a `Makefile`. You can specify the `priority` to resolve this.
 
-## Reset and clear
+## Reset
 
 ```lua
 reset = true
-clear = true
 ```
 
-By default, the terminal will be reset and the match list will be cleared before every
-build triggered. You can disable this with the `reset` and `clear` options.
-
-Note that disabling `reset`, but enabling `clear` currently has some issues. The intended
-behaviour is that all matches are cleared and then only output from the newly run command
-should produce new matches. However at the moment the output from previous commands may
-also match again. This is a known issue.
+By default, the terminal will be reset before every build triggered. You can disable this
+with the `reset` option. Note that disabling `reset` will also mean that by default the
+list of matches will contain old and new errors. Currently there is no way to mark old
+match items as "seen" or clear them (other than cleaning the terminal contents by running
+`"clear"`).
