@@ -118,8 +118,18 @@ function Terminal:show(config)
 			vim.api.nvim_set_current_win(prev_win)
 		end
 	elseif config.focus then
-		vim.api.nvim_set_current_win(self._window)
-		config.on_focus()
+		local old_win = vim.api.nvim_get_current_win()
+		local ok, MatchList = pcall(require, "match-list")
+
+		if ok then
+			-- Set the window we moved from as the file window.
+			MatchList.set_file_window(old_win)
+		end
+
+		if self._window ~= old_win then
+			vim.api.nvim_set_current_win(self._window)
+			config.on_focus()
+		end
 	end
 end
 
