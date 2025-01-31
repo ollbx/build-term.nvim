@@ -55,6 +55,7 @@ function M.new(config)
 		init_window = function()
 			vim.opt_local.nu = false
 			vim.opt_local.relativenumber = false
+			vim.opt_local.scrolloff = 4
 		end,
 		-- Default focus function enters insert mode.
 		on_focus = function()
