@@ -9,12 +9,11 @@ _Warning_: still in active development.
 ## Features
 
 - Minimalistic and highly customizable.
-- Error matching using regular expressions or lua functions.
-- Support for matching multi-line error messages.
-- Navigation between matches across different files.
-- Matches can also be sent to the quickfix.
+- Error matching using [match-list.nvim](https://github.com/ollbx/match-list.nvim).
+  - Navigation between matches across different files.
+  - Matches can also be sent to the quickfix.
+  - Multiple match configurations for different languages / build tools.
 - Build command auto-detection (based on files or custom lua function).
-- Multiple match configurations for different languages / build tools.
 
 ## Documentation
 
