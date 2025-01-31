@@ -45,7 +45,7 @@ function M.setup(config)
 	if match_ok then
 		-- Re-export commands from match-list.
 		commands = vim.tbl_extend("force", commands, {
-			["goto"] = MatchList.goto,
+			["goto"] = MatchList["goto"],
 			next = MatchList.next,
 			prev = MatchList.prev,
 			first = MatchList.first,
