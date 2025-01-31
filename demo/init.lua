@@ -16,8 +16,7 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup({
-	spec = { 
-
+	spec = {
 		{
 			"rebelot/kanagawa.nvim",
 			config = function()
