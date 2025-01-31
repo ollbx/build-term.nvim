@@ -2,7 +2,11 @@
 ---@field terminal BuildTerm.Terminal.Config? The terminal configuration.
 ---@field build BuildTerm.Builder.Config? The builder configuration.
 
-local M = {}
+local M = {
+	_terminal = nil,
+	_builder = nil,
+	_commands = nil,
+}
 
 -------------------------------------------------------------------------------
 -- Public API
@@ -30,7 +34,7 @@ function M.setup(config)
 		vim.notify(err --[[@as string]], vim.log.levels.ERROR)
 	end
 
-	local commands = {
+	M._commands = {
 		show = function() M.show() end,
 		open = function() M.open() end,
 		close = function() M.close() end,
@@ -43,17 +47,19 @@ function M.setup(config)
 	local match_ok, MatchList = pcall(require, "match-list")
 
 	if match_ok then
+		local match_commands = MatchList._commands
+
 		-- Re-export commands from match-list.
-		commands = vim.tbl_extend("force", commands, {
-			["goto"] = MatchList["goto"],
-			next = MatchList.next,
-			prev = MatchList.prev,
-			first = MatchList.first,
-			last = MatchList.last,
-			unselect = MatchList.unselect,
-			group = MatchList.group,
-			lgroup = MatchList.lgroup,
-			quickfix = MatchList.quickfix,
+		M._commands = vim.tbl_extend("force", M._commands, {
+			["goto"] = match_commands["goto"],
+			next = match_commands.next,
+			prev = match_commands.prev,
+			first = match_commands.first,
+			last = match_commands.last,
+			unselect = match_commands.unselect,
+			group = match_commands.group,
+			lgroup = match_commands.lgroup,
+			quickfix = match_commands.quickfix,
 		})
 	end
 
@@ -61,7 +67,7 @@ function M.setup(config)
 		if #args.fargs == 0 then
 			M.open()
 		else
-			local fun = commands[args.fargs[1]]
+			local fun = M._commands[args.fargs[1]]
 			local rest = {}
 
 			for i=2,#args.fargs do
@@ -79,7 +85,7 @@ function M.setup(config)
 	vim.api.nvim_create_user_command("BuildTerm", command, {
 		bar = true,
 		nargs = "*",
-		complete = function() return vim.tbl_keys(commands) end,
+		complete = function() return vim.tbl_keys(M._commands) end,
 	})
 end
 
