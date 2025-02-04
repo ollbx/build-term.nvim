@@ -127,7 +127,7 @@ function Builder:build(...)
 		if command.check() then
 			-- Save all files if requested.
 			if self.config.save_before_build then
-				vim.cmd("wa")
+				vim.cmd("silent wa")
 			end
 
 			-- Run the prepare function.
