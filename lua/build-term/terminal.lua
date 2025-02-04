@@ -53,9 +53,10 @@ function M.new(config)
 		end,
 		-- Default init function disables line numbers.
 		init_window = function()
-			vim.opt_local.nu = false
-			vim.opt_local.relativenumber = false
-			vim.opt_local.scrolloff = 4
+			vim.wo.winfixheight = true
+			vim.wo.scrolloff = 4
+			vim.wo.relativenumber = false
+			vim.wo.number = false
 		end,
 		-- Default focus function enters insert mode.
 		on_focus = function()
