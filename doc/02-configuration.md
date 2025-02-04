@@ -27,8 +27,10 @@ opts = {
         -- Hook function called when initializing the terminal window.
         -- The window is active, when the function is called.
         init_window = function(_window)
-            vim.opt_local.nu = false
-            vim.opt_local.relativenumber = false
+            vim.wo.winfixheight = true
+            vim.wo.scrolloff = 4
+            vim.wo.relativenumber = false
+            vim.wo.number = false
         end,
 
         -- Hook function called when the terminal window receives the focus
