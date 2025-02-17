@@ -152,6 +152,13 @@ function Terminal:reset()
 		self._buffer = -1
 	end
 
+	-- Cancel any current selection.
+	local ok, MatchList = pcall(require, "match-list")
+
+	if ok then
+		MatchList.cancel()
+	end
+
 	if open then
 		self:show({ focus = focus })
 	end
