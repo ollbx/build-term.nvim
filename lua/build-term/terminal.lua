@@ -21,32 +21,6 @@
 
 local M = {}
 
-local function save_window()
-	return {
-		win = vim.api.nvim_get_current_win(),
-		mode = vim.api.nvim_get_mode(),
-	}
-end
-
-local function restore_window(prev)
-	vim.api.nvim_set_current_win(prev.win)
-
-	-- There is probably a much better way to do this.
-	local cur_mode = vim.api.nvim_get_mode()
-
-	-- Little hack for users with startinsert autocmd.
-	if cur_mode.mode == "i" and prev.mode.mode == "n" then
-		vim.cmd("stopinsert")
-	end
-end
-
-local function with_window(win, fun)
-	local prev = save_window()
-	vim.api.nvim_set_current_win(win)
-	fun()
-	restore_window(prev)
-end
-
 ---@class BuildTerm.Terminal
 ---@field _buffer integer The terminal buffer (or -1 if uninitialized).
 ---@field _window integer The terminal window (or -1 if hidden).
@@ -78,11 +52,11 @@ function M.new(config)
 			end
 		end,
 		-- Default init function disables line numbers.
-		init_window = function()
-			vim.wo.winfixheight = true
-			vim.wo.scrolloff = 4
-			vim.wo.relativenumber = false
-			vim.wo.number = false
+		init_window = function(win)
+			vim.wo[win].winfixheight = true
+			vim.wo[win].scrolloff = 4
+			vim.wo[win].relativenumber = false
+			vim.wo[win].number = false
 		end,
 		-- Default focus function enters insert mode.
 		on_focus = function()
@@ -110,7 +84,7 @@ function Terminal:show(config)
 		self._buffer = vim.api.nvim_create_buf(false, true)
 	end
 
-	local prev = save_window()
+	local prev_win = vim.api.nvim_get_current_win()
 
 	-- Create the window if it is invalid.
 	if not vim.api.nvim_win_is_valid(self._window) then
@@ -122,7 +96,7 @@ function Terminal:show(config)
 
 		-- Create the window and switch to it.
 		win_config.win = -1
-		self._window = vim.api.nvim_open_win(self._buffer, true, win_config)
+		self._window = vim.api.nvim_open_win(self._buffer, false, win_config)
 
 		-- Initialize the window.
 		config.init_window(self._window)
@@ -135,26 +109,26 @@ function Terminal:show(config)
 				shell = config.shell()
 			end
 
-			vim.cmd.terminal(shell)
+			vim.api.nvim_win_call(self._window, function()
+				vim.cmd.terminal(shell)
+			end)
 
 			config.init_buffer(self._buffer)
 		end
 	end
 
 	if config.focus then
-		if self._window ~= prev.win then
+		if self._window ~= prev_win then
 			local ok, MatchList = pcall(require, "match-list")
 
 			if ok then
 				-- Set the window we moved from as the file window.
-				MatchList.set_file_window(prev.win)
+				MatchList.set_file_window(prev_win)
 			end
 
 			vim.api.nvim_set_current_win(self._window)
 			config.on_focus()
 		end
-	else
-		restore_window(prev)
 	end
 end
 
@@ -234,7 +208,7 @@ function Terminal:send(command, config)
 
 		-- self.ve to the end of the buffer (so that it auto-scrolls).
 		if vim.api.nvim_win_is_valid(self._window) then
-			with_window(self._window, function()
+			vim.api.nvim_win_call(self._window, function()
 				vim.cmd("norm G")
 			end)
 		end
