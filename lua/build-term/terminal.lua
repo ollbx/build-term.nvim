@@ -21,6 +21,32 @@
 
 local M = {}
 
+local function save_window()
+	return {
+		win = vim.api.nvim_get_current_win(),
+		mode = vim.api.nvim_get_mode(),
+	}
+end
+
+local function restore_window(prev)
+	vim.api.nvim_set_current_win(prev.win)
+
+	-- There is probably a much better way to do this.
+	local cur_mode = vim.api.nvim_get_mode()
+
+	-- Little hack for users with startinsert autocmd.
+	if cur_mode.mode == "i" and prev.mode.mode == "n" then
+		vim.cmd("stopinsert")
+	end
+end
+
+local function with_window(win, fun)
+	local prev = save_window()
+	vim.api.nvim_set_current_win(win)
+	fun()
+	restore_window(prev)
+end
+
 ---@class BuildTerm.Terminal
 ---@field _buffer integer The terminal buffer (or -1 if uninitialized).
 ---@field _window integer The terminal window (or -1 if hidden).
@@ -84,8 +110,7 @@ function Terminal:show(config)
 		self._buffer = vim.api.nvim_create_buf(false, true)
 	end
 
-	local prev_win = vim.api.nvim_get_current_win()
-	local prev_mode = vim.api.nvim_get_mode()
+	local prev = save_window()
 
 	-- Create the window if it is invalid.
 	if not vim.api.nvim_win_is_valid(self._window) then
@@ -117,26 +142,19 @@ function Terminal:show(config)
 	end
 
 	if config.focus then
-		if self._window ~= prev_win then
+		if self._window ~= prev.win then
 			local ok, MatchList = pcall(require, "match-list")
 
 			if ok then
 				-- Set the window we moved from as the file window.
-				MatchList.set_file_window(prev_win)
+				MatchList.set_file_window(prev.win)
 			end
 
 			vim.api.nvim_set_current_win(self._window)
 			config.on_focus()
 		end
 	else
-		vim.api.nvim_set_current_win(prev_win)
-
-		local cur_mode = vim.api.nvim_get_mode()
-
-		-- Little hack for users with startinsert autocmd.
-		if cur_mode.mode == "i" and prev_mode.mode == "n" then
-			vim.cmd("stopinsert")
-		end
+		restore_window(prev)
 	end
 end
 
@@ -216,10 +234,9 @@ function Terminal:send(command, config)
 
 		-- self.ve to the end of the buffer (so that it auto-scrolls).
 		if vim.api.nvim_win_is_valid(self._window) then
-			local prev_win = vim.api.nvim_get_current_win()
-			vim.api.nvim_set_current_win(self._window)
-			vim.cmd("norm G")
-			vim.api.nvim_set_current_win(prev_win)
+			with_window(self._window, function()
+				vim.cmd("norm G")
+			end)
 		end
 	end
 end
