@@ -85,6 +85,7 @@ function Terminal:show(config)
 	end
 
 	local prev_win = vim.api.nvim_get_current_win()
+	local prev_mode = vim.api.nvim_get_mode()
 
 	-- Create the window if it is invalid.
 	if not vim.api.nvim_win_is_valid(self._window) then
@@ -129,6 +130,13 @@ function Terminal:show(config)
 		end
 	else
 		vim.api.nvim_set_current_win(prev_win)
+
+		local cur_mode = vim.api.nvim_get_mode()
+
+		-- Little hack for users with startinsert autocmd.
+		if cur_mode.mode == "i" and prev_mode.mode == "n" then
+			vim.cmd("stopinsert")
+		end
 	end
 end
 
